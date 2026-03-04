@@ -1,0 +1,266 @@
+---
+title: NBA Playoff Prediction with Machine Learning
+description: Predict playoff teams using season statistics with logistic regression, KNN, and neural networks
+mode: custom
+---
+
+<div className="relative overflow-hidden bg-gradient-to-br from-[#1D428A] via-[#1D428A] to-[#0f2d5e] dark:from-[#0f1a2e] dark:via-[#1D428A] dark:to-[#0a1829] py-20">
+  <div className="max-w-6xl mx-auto px-6 lg:px-8">
+    <div className="grid lg:grid-cols-12 gap-8 items-center">
+      <div className="lg:col-span-7">
+        <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white mb-6">
+          NBA Playoff Prediction
+        </h1>
+        <p className="text-lg sm:text-xl text-gray-100 dark:text-gray-200 max-w-2xl mb-8">
+          Machine learning system that predicts which NBA teams will make the playoffs based on season-long statistics. Compare three model families—logistic regression, KNN, and neural networks—across multiple performance metrics.
+        </p>
+        <div className="flex flex-wrap gap-4">
+          <a 
+            href="/quickstart" 
+            className="inline-flex items-center px-6 py-3 rounded-lg bg-[#C8102E] hover:bg-[#a00d25] text-white font-semibold transition-colors no-underline"
+          >
+            Get Started
+            <svg className="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </a>
+          <a 
+            href="/models/overview" 
+            className="inline-flex items-center px-6 py-3 rounded-lg border border-white/30 bg-white/10 hover:bg-white/20 text-white font-semibold transition-colors no-underline"
+          >
+            Explore Models
+          </a>
+        </div>
+      </div>
+      <div className="lg:col-span-5 hidden lg:block">
+        <div className="relative">
+          <div className="absolute inset-0 bg-gradient-to-r from-[#C8102E] to-[#1D428A] rounded-2xl blur-2xl opacity-20"></div>
+          <div className="relative bg-white/10 dark:bg-black/20 backdrop-blur-sm rounded-2xl border border-white/20 p-6">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-gray-200 font-medium">Model Performance</span>
+                <span className="text-xs text-gray-300 bg-white/10 px-2 py-1 rounded">Test Set</span>
+              </div>
+              <div className="space-y-3">
+                <div>
+                  <div className="flex justify-between text-sm mb-1">
+                    <span className="text-gray-200">Neural Network</span>
+                    <span className="text-white font-semibold">94.2% AUC</span>
+                  </div>
+                  <div className="w-full bg-white/10 rounded-full h-2">
+                    <div className="bg-[#C8102E] h-2 rounded-full" style={{width: '94%'}}></div>
+                  </div>
+                </div>
+                <div>
+                  <div className="flex justify-between text-sm mb-1">
+                    <span className="text-gray-200">Logistic Regression</span>
+                    <span className="text-white font-semibold">92.8% AUC</span>
+                  </div>
+                  <div className="w-full bg-white/10 rounded-full h-2">
+                    <div className="bg-[#1D428A] h-2 rounded-full" style={{width: '92.8%'}}></div>
+                  </div>
+                </div>
+                <div>
+                  <div className="flex justify-between text-sm mb-1">
+                    <span className="text-gray-200">KNN</span>
+                    <span className="text-white font-semibold">91.5% AUC</span>
+                  </div>
+                  <div className="w-full bg-white/10 rounded-full h-2">
+                    <div className="bg-gray-400 h-2 rounded-full" style={{width: '91.5%'}}></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div className="mt-16 mb-16 max-w-5xl mx-auto px-6">
+  <div className="mb-12">
+    <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">Quick Start</h2>
+    <p className="text-gray-600 dark:text-gray-400">Get up and running with NBAPredict in minutes</p>
+  </div>
+
+  <Steps>
+    <Step title="Install dependencies">
+      Clone the repository and install Python packages:
+      
+      ```bash
+      git clone https://github.com/Techdude01/NBAPredict.git
+      cd NBAPredict
+      pip install -r requirements.txt
+      ```
+      
+      The project requires Python 3.10+ and packages including pandas, numpy, tensorflow, scikit-learn, and kaggle.
+    </Step>
+
+    <Step title="Set up Kaggle API credentials">
+      Create a `.env` file with your Kaggle credentials:
+      
+      ```bash
+      cp .env.example .env
+      ```
+      
+      Edit `.env` and add your Kaggle username and API key:
+      
+      ```bash
+      KAGGLE_USERNAME=your_username
+      KAGGLE_KEY=your_api_key
+      ```
+      
+      <Tip>Get your Kaggle API credentials from your [Kaggle account settings](https://www.kaggle.com/settings)</Tip>
+    </Step>
+
+    <Step title="Run data preparation">
+      Open and execute `NBAPredict.ipynb` to download the NBA dataset and prepare training data:
+      
+      ```python
+      # The notebook will:
+      # 1. Download historical NBA game data from Kaggle
+      # 2. Aggregate per-team-season statistics
+      # 3. Create train/validation/test splits
+      # 4. Generate scaled and polynomial features
+      ```
+      
+      This creates processed data files in `./data/processed/` including:
+      - `X_train_scaled.npy`, `X_val_scaled.npy`, `X_test_scaled.npy`
+      - `X_train_poly2.npy`, `X_train_poly3.npy`, `X_train_pca.npy`
+      - `y_train.npy`, `y_val.npy`, `y_test.npy`
+    </Step>
+
+    <Step title="Train models">
+      Run any of the model notebooks to train and evaluate:
+      
+      - **LogPredict.ipynb** — Custom logistic regression with gradient ascent
+      - **KNNPredict.ipynb** — KNN with grid search over K, distance metric, and weighting
+      - **NeuralNetworkPredict.ipynb** — TensorFlow/Keras neural networks with various architectures
+      
+      Each notebook trains multiple configurations and saves the best model to `./results/`.
+    </Step>
+
+    <Step title="Compare results">
+      Run `ModelComparison.ipynb` to load the best models and compare performance:
+      
+      ```python
+      # Metrics evaluated:
+      # - Accuracy
+      # - Precision
+      # - Recall
+      # - F1 Score
+      # - AUC (Area Under ROC Curve)
+      ```
+      
+      The comparison notebook generates visualizations and summary tables showing which model performs best for playoff prediction.
+    </Step>
+  </Steps>
+</div>
+
+<div className="mt-16 mb-16 max-w-5xl mx-auto px-6">
+  <div className="mb-8">
+    <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">Explore by Topic</h2>
+    <p className="text-gray-600 dark:text-gray-400">Dive into data preparation, model architectures, and training workflows</p>
+  </div>
+
+  <CardGroup cols={2}>
+    <Card title="Data Pipeline" icon="database" href="/data/overview">
+      Learn how NBA game logs are transformed into per-team-season features for playoff prediction
+    </Card>
+    <Card title="Model Architectures" icon="brain" href="/models/overview">
+      Compare logistic regression, KNN, and neural network approaches to classification
+    </Card>
+    <Card title="Training & Evaluation" icon="chart-line" href="/guides/training">
+      Understand hyperparameter tuning, regularization, and model comparison metrics
+    </Card>
+    <Card title="Kaggle Integration" icon="download" href="/guides/kaggle-api">
+      Set up the Kaggle API to download historical NBA datasets automatically
+    </Card>
+  </CardGroup>
+</div>
+
+<div className="mt-16 mb-16 max-w-5xl mx-auto px-6">
+  <div className="mb-8">
+    <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">Key Features</h2>
+    <p className="text-gray-600 dark:text-gray-400">What makes this NBA prediction system unique</p>
+  </div>
+
+  <div className="grid md:grid-cols-2 gap-6">
+    <div className="bg-gray-50 dark:bg-[#1a1d27] border border-gray-200 dark:border-[#27272a] rounded-xl p-6">
+      <div className="flex items-start gap-4">
+        <div className="flex-shrink-0 w-10 h-10 bg-[#1D428A] rounded-lg flex items-center justify-center">
+          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+          </svg>
+        </div>
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Custom Logistic Regression</h3>
+          <p className="text-gray-600 dark:text-gray-400">Implemented from scratch using gradient ascent with L2 regularization—no scikit-learn shortcuts</p>
+        </div>
+      </div>
+    </div>
+
+    <div className="bg-gray-50 dark:bg-[#1a1d27] border border-gray-200 dark:border-[#27272a] rounded-xl p-6">
+      <div className="flex items-start gap-4">
+        <div className="flex-shrink-0 w-10 h-10 bg-[#C8102E] rounded-lg flex items-center justify-center">
+          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
+          </svg>
+        </div>
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Comprehensive EDA</h3>
+          <p className="text-gray-600 dark:text-gray-400">Exploratory analysis with PCA, K-means clustering, and correlation matrices to understand feature relationships</p>
+        </div>
+      </div>
+    </div>
+
+    <div className="bg-gray-50 dark:bg-[#1a1d27] border border-gray-200 dark:border-[#27272a] rounded-xl p-6">
+      <div className="flex items-start gap-4">
+        <div className="flex-shrink-0 w-10 h-10 bg-[#1D428A] rounded-lg flex items-center justify-center">
+          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+          </svg>
+        </div>
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Rigorous Model Comparison</h3>
+          <p className="text-gray-600 dark:text-gray-400">Evaluate accuracy, precision, recall, F1, and AUC across multiple model families and feature transformations</p>
+        </div>
+      </div>
+    </div>
+
+    <div className="bg-gray-50 dark:bg-[#1a1d27] border border-gray-200 dark:border-[#27272a] rounded-xl p-6">
+      <div className="flex items-start gap-4">
+        <div className="flex-shrink-0 w-10 h-10 bg-[#C8102E] rounded-lg flex items-center justify-center">
+          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+          </svg>
+        </div>
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Production-Ready Pipeline</h3>
+          <p className="text-gray-600 dark:text-gray-400">Automated data download from Kaggle, feature engineering, and model training in reproducible Jupyter notebooks</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div className="mt-16 mb-16 max-w-5xl mx-auto px-6">
+  <div className="bg-gradient-to-br from-[#1D428A] to-[#0f2d5e] dark:from-[#0f1a2e] dark:to-[#1D428A] rounded-2xl p-8 md:p-12 border border-gray-200 dark:border-[#27272a]">
+    <div className="max-w-3xl">
+      <h2 className="text-3xl font-bold text-white mb-4">Ready to start predicting?</h2>
+      <p className="text-gray-100 dark:text-gray-200 text-lg mb-6">
+        Follow the quickstart guide to train your first playoff prediction model in minutes.
+      </p>
+      <a 
+        href="/quickstart" 
+        className="inline-flex items-center px-6 py-3 rounded-lg bg-[#C8102E] hover:bg-[#a00d25] text-white font-semibold transition-colors no-underline"
+      >
+        View Quickstart
+        <svg className="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+        </svg>
+      </a>
+    </div>
+  </div>
+</div>

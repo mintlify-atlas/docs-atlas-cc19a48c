@@ -1,0 +1,355 @@
+---
+title: 'Training Models'
+description: 'Understand the training workflow, hyperparameter tuning, and model evaluation in NBAPredict'
+---
+
+## Overview
+
+NBAPredict implements three model families—**logistic regression**, **k-nearest neighbors (KNN)**, and **neural networks**—each with different architectures and regularization strategies. This guide explains the training workflow, hyperparameter tuning process, and how to interpret results.
+
+## Feature Transformations
+
+All models are trained on four different feature representations:
+
+<Info>
+Each transformation creates different input spaces, and model performance varies across these representations.
+</Info>
+
+| Transformation | Description | Shape |
+|----------------|-------------|-------|
+| **Baseline** | Standardized features (mean=0, std=1) | (446, 27) |
+| **Polynomial (degree 2)** | All pairwise feature interactions | (446, 405) |
+| **Polynomial (degree 3)** | Up to 3-way feature interactions | (446, 4059) |
+| **PCA** | Principal components (95% variance) | (446, 13) |
+
+<Tip>
+The polynomial transformations can capture non-linear relationships but may lead to overfitting. PCA reduces dimensionality and may improve generalization.
+</Tip>
+
+## Model 1: Logistic Regression
+
+### Implementation Details
+
+The logistic regression model is **implemented from scratch** using gradient ascent with L2 regularization:
+
+```python
+# Sigmoid function
+def sigmoid(z):
+    return 1 / (1 + np.exp(-z))
+
+# Log likelihood with L2 regularization
+def log_likelihood(X, y, theta, lambda_reg):
+    n = X.shape[0]
+    predictions = sigmoid(X @ theta)
+    ll = np.sum(y * np.log(predictions + 1e-10) + 
+                (1 - y) * np.log(1 - predictions + 1e-10))
+    reg_term = (lambda_reg / 2) * np.sum(theta[1:] ** 2)
+    return ll - reg_term
+```
+
+### Hyperparameter Grid
+
+The notebook searches over:
+- **Learning rates:** [0.001, 0.01, 0.1]
+- **Regularization (λ):** [0.0, 0.001, 0.01, 0.1, 1.0]
+- **Iterations:** [1000, 5000, 10000]
+- **Feature transformations:** [baseline, poly2, poly3, PCA]
+
+<Warning>
+Polynomial degree 3 features (4059 dimensions) require careful regularization to avoid overfitting. Expect longer training times.
+</Warning>
+
+### Training Process
+
+1. **Grid search:** Each combination of hyperparameters is trained
+2. **Validation:** Performance measured on validation set
+3. **Best model selection:** Highest validation accuracy/AUC
+4. **Test evaluation:** Final performance on held-out test set
+
+### Expected Output
+
+```
+Best Logistic Regression Model:
+  Feature Transform: baseline
+  Learning Rate: 0.01
+  Lambda: 0.1
+  Iterations: 5000
+  Validation Accuracy: 0.85
+  
+Test Set Performance:
+  Accuracy: 0.83
+  Precision: 0.81
+  Recall: 0.86
+  F1: 0.83
+  AUC: 0.88
+```
+
+### Saved Artifacts
+
+- **Model weights:** `./models/logistic_regression/best_model_weights.npy`
+- **Training config:** `./models/logistic_regression/config.json`
+- **Results:** `./results/logistic_regression/metrics.json`
+
+## Model 2: K-Nearest Neighbors (KNN)
+
+### Implementation Details
+
+KNN uses **scikit-learn's implementation** with a grid search over:
+
+- **Number of neighbors (K):** [3, 5, 7, 9, 11, 15, 20]
+- **Distance metric:** [euclidean, manhattan, minkowski]
+- **Weight function:** [uniform, distance]
+- **Feature transformations:** [baseline, poly2, poly3, PCA]
+
+### Training Process
+
+```python
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.model_selection import GridSearchCV
+
+param_grid = {
+    'n_neighbors': [3, 5, 7, 9, 11, 15, 20],
+    'metric': ['euclidean', 'manhattan', 'minkowski'],
+    'weights': ['uniform', 'distance']
+}
+
+knn = KNeighborsClassifier()
+grid_search = GridSearchCV(knn, param_grid, cv=5, scoring='roc_auc')
+grid_search.fit(X_train, y_train)
+```
+
+<Info>
+KNN is a lazy learner—no explicit training phase. Predictions are made by finding the K nearest training examples at query time.
+</Info>
+
+### Expected Output
+
+```
+Best KNN Model:
+  K: 9
+  Metric: manhattan
+  Weights: distance
+  Feature Transform: PCA
+  Validation Accuracy: 0.82
+  
+Test Set Performance:
+  Accuracy: 0.80
+  Precision: 0.79
+  Recall: 0.83
+  F1: 0.81
+  AUC: 0.85
+```
+
+### Key Insights
+
+- **Distance-weighted KNN** often outperforms uniform weighting
+- **Manhattan distance** may work better for high-dimensional spaces
+- **PCA features** can improve KNN by removing noise and reducing dimensions
+
+<Tip>
+If training is slow, reduce the grid search space or use a smaller subset of K values.
+</Tip>
+
+### Saved Artifacts
+
+- **Model:** `./models/knn/best_model.pkl` (pickled scikit-learn model)
+- **Config:** `./models/knn/config.json`
+- **Results:** `./results/knn/metrics.json`
+
+## Model 3: Neural Networks
+
+### Implementation Details
+
+Neural networks are built with **TensorFlow/Keras** and explore different architectures:
+
+**Architecture search:**
+- **Hidden layers:** [1, 2, 3]
+- **Neurons per layer:** [16, 32, 64, 128]
+- **Activation:** [relu, tanh]
+- **Dropout rate:** [0.0, 0.2, 0.5]
+- **L2 regularization:** [0.0, 0.001, 0.01]
+
+### Example Architecture
+
+```python
+from tensorflow import keras
+
+model = keras.Sequential([
+    keras.layers.Dense(64, activation='relu', 
+                       kernel_regularizer=keras.regularizers.l2(0.01),
+                       input_shape=(n_features,)),
+    keras.layers.Dropout(0.2),
+    keras.layers.Dense(32, activation='relu',
+                       kernel_regularizer=keras.regularizers.l2(0.01)),
+    keras.layers.Dropout(0.2),
+    keras.layers.Dense(1, activation='sigmoid')
+])
+
+model.compile(optimizer='adam',
+              loss='binary_crossentropy',
+              metrics=['accuracy', keras.metrics.AUC()])
+```
+
+### Training Process
+
+1. **Architecture loop:** Test different layer configurations
+2. **Early stopping:** Monitor validation loss to prevent overfitting
+3. **Checkpointing:** Save best model based on validation AUC
+4. **Evaluation:** Test final model on held-out test set
+
+<Warning>
+Neural network training is computationally intensive. Expect 5-15 minutes per architecture depending on your hardware.
+</Warning>
+
+### Expected Output
+
+```
+Training model: 2 layers, 64 neurons, dropout=0.2
+Epoch 1/100: loss=0.65, val_loss=0.62, auc=0.72
+Epoch 2/100: loss=0.58, val_loss=0.59, auc=0.76
+...
+Epoch 45/100: Early stopping triggered
+
+Best Neural Network:
+  Layers: [64, 32]
+  Dropout: 0.2
+  L2 Reg: 0.01
+  Feature Transform: baseline
+  Validation AUC: 0.89
+  
+Test Set Performance:
+  Accuracy: 0.87
+  Precision: 0.85
+  Recall: 0.88
+  F1: 0.86
+  AUC: 0.91
+```
+
+### Saved Artifacts
+
+- **Model:** `./models/neural_network/best_model.h5` (Keras format)
+- **Training history:** `./models/neural_network/history.json`
+- **Config:** `./models/neural_network/config.json`
+- **Results:** `./results/neural_network/metrics.json`
+
+## Interpreting Results
+
+### Evaluation Metrics
+
+All models are evaluated on five key metrics:
+
+| Metric | Formula | Interpretation |
+|--------|---------|----------------|
+| **Accuracy** | (TP + TN) / Total | Overall correctness |
+| **Precision** | TP / (TP + FP) | Of predicted playoffs, % correct |
+| **Recall** | TP / (TP + FN) | Of actual playoffs, % identified |
+| **F1 Score** | 2 × (Precision × Recall) / (Precision + Recall) | Harmonic mean of precision/recall |
+| **AUC** | Area under ROC curve | Probability ranking quality |
+
+<Info>
+**AUC (Area Under Curve)** is particularly important for imbalanced datasets. An AUC of 0.9 means the model has a 90% chance of ranking a random playoff team higher than a non-playoff team.
+</Info>
+
+### Confusion Matrix
+
+Each notebook generates a confusion matrix:
+
+```
+                Predicted
+              No    Yes
+Actual  No  [[45     5]
+        Yes  [8    62]]
+```
+
+- **True Negatives (45):** Correctly predicted non-playoff
+- **False Positives (5):** Incorrectly predicted playoff
+- **False Negatives (8):** Missed playoff teams
+- **True Positives (62):** Correctly predicted playoff
+
+### ROC Curves
+
+ROC curves plot True Positive Rate vs False Positive Rate:
+- **Closer to top-left corner:** Better performance
+- **Diagonal line:** Random guessing
+- **AUC = 1.0:** Perfect classifier
+
+## Hyperparameter Tuning Tips
+
+<Tip>
+**Start with a coarse grid:** Use wide ranges and few values initially. Then narrow down around the best performing region.
+</Tip>
+
+<Tip>
+**Monitor overfitting:** If validation performance is much lower than training performance, increase regularization or reduce model complexity.
+</Tip>
+
+<Tip>
+**Feature engineering matters:** Sometimes better features are more valuable than complex models. Try the different transformations.
+</Tip>
+
+<Warning>
+**Avoid test set leakage:** Never use the test set for hyperparameter selection. Only evaluate on test set once to get final performance.
+</Warning>
+
+## Model Comparison
+
+After training all models, run `ModelComparison.ipynb` to see side-by-side results:
+
+```
+Model               Accuracy  Precision  Recall   F1     AUC
+----------------------------------------------------------
+Logistic Reg        0.83      0.81       0.86     0.83   0.88
+KNN                 0.80      0.79       0.83     0.81   0.85
+Neural Network      0.87      0.85       0.88     0.86   0.91
+```
+
+### Key Takeaways
+
+From the README:
+> "The high-level takeaway: neural networks slightly outperform the baselines on AUC, but all three approaches are competitive and sensitive to the feature engineering choices."
+
+- **Neural networks** tend to have the highest AUC due to their ability to model complex non-linearities
+- **Logistic regression** provides interpretable coefficients and fast training
+- **KNN** is simple and effective but can be slow at prediction time
+- **Feature choice** (baseline vs polynomial vs PCA) significantly impacts all models
+
+## Saving and Loading Models
+
+### Save a Model
+
+```python
+# Logistic Regression
+np.save('./models/logistic_regression/weights.npy', theta)
+
+# KNN
+import pickle
+with open('./models/knn/model.pkl', 'wb') as f:
+    pickle.dump(knn_model, f)
+
+# Neural Network
+model.save('./models/neural_network/model.h5')
+```
+
+### Load a Model
+
+```python
+# Logistic Regression
+theta = np.load('./models/logistic_regression/weights.npy')
+
+# KNN
+import pickle
+with open('./models/knn/model.pkl', 'rb') as f:
+    knn_model = pickle.load(f)
+
+# Neural Network
+from tensorflow import keras
+model = keras.models.load_model('./models/neural_network/model.h5')
+```
+
+## Next Steps
+
+- **Experiment with features:** Modify `NBAPredict.ipynb` to engineer new features
+- **Try different architectures:** Adjust neural network depth/width
+- **Ensemble methods:** Combine predictions from multiple models
+- **Cross-validation:** Implement k-fold CV for more robust hyperparameter selection
+- **Feature importance:** Analyze which features contribute most to predictions

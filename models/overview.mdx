@@ -1,0 +1,88 @@
+---
+title: 'Models Overview'
+description: 'Overview of machine learning models for NBA playoff prediction'
+---
+
+# NBA Playoff Prediction Models
+
+This section documents the machine learning models developed to predict NBA playoff team qualification. The prediction system uses three different approaches to classify teams:
+
+## Model Approaches
+
+### 1. Logistic Regression
+A classical linear classifier with L2 regularization. This model serves as a strong baseline and provides interpretable coefficients.
+
+**Key Features:**
+- Custom gradient ascent implementation
+- L2 regularization to prevent overfitting
+- Tested across multiple feature transformations
+- Fast training and prediction
+
+### 2. K-Nearest Neighbors (KNN)
+A non-parametric distance-based classifier that makes predictions based on similar historical team performances.
+
+**Key Features:**
+- Multiple K values tested (1, 3, 5, 7, 9, 11, 15, 21)
+- Manhattan and Euclidean distance metrics
+- Uniform and distance-based weighting schemes
+- Works well with polynomial feature transformations
+
+### 3. Neural Network
+A deep learning approach with multiple hidden layers and regularization techniques.
+
+**Key Features:**
+- Multiple architectures tested (2-layer, 3-layer, 5-layer)
+- L2 regularization for generalization
+- Dropout for preventing overfitting
+- Adam optimizer with adaptive learning rates
+
+## Feature Transformations
+
+All models were tested with four different feature transformation approaches:
+
+1. **Baseline (Scaled)** - Standard scaled features
+2. **Polynomial Degree 2** - Quadratic feature interactions
+3. **Polynomial Degree 3** - Cubic feature interactions
+4. **PCA (95% variance)** - Dimensionality reduction
+
+## Performance Metrics
+
+Models are evaluated using five key metrics:
+
+- **Accuracy** - Overall classification accuracy
+- **Precision** - Accuracy of positive predictions
+- **Recall** - Ability to find all playoff teams
+- **F1 Score** - Harmonic mean of precision and recall
+- **AUC** - Area Under the ROC Curve
+
+## Best Model Results
+
+Based on comprehensive testing across all feature transformations:
+
+| Model | Accuracy | Precision | Recall | F1 Score | AUC |
+|-------|----------|-----------|--------|----------|-----|
+| **Neural Network** | 0.8750 | 0.8936 | 0.9844 | 0.8936 | **0.9824** |
+| Logistic Regression | 0.8917 | 0.8493 | 0.9688 | 0.9051 | 0.9754 |
+| K-Nearest Neighbors | 0.8167 | 0.7500 | 0.9844 | 0.8514 | 0.9660 |
+
+<Note>
+The Neural Network achieved the highest AUC (0.9824) with baseline features and L2-0.01 regularization, making it the recommended model for deployment.
+</Note>
+
+## Next Steps
+
+<CardGroup cols={3}>
+  <Card title="Logistic Regression" icon="chart-line" href="/models/logistic-regression">
+    Learn about the logistic regression implementation
+  </Card>
+  <Card title="K-Nearest Neighbors" icon="diagram-project" href="/models/knn">
+    Explore the KNN classifier details
+  </Card>
+  <Card title="Neural Network" icon="brain" href="/models/neural-network">
+    Discover the deep learning architecture
+  </Card>
+</CardGroup>
+
+<Card title="Model Comparison" icon="scale-balanced" href="/models/comparison">
+  Compare all models side-by-side
+</Card>

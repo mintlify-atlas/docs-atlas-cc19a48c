@@ -1,0 +1,248 @@
+---
+title: 'Running Notebooks'
+description: 'Learn how to open, execute, and work with NBAPredict Jupyter notebooks'
+---
+
+## Overview
+
+NBAPredict uses Jupyter notebooks for data processing, model training, and evaluation. This guide covers how to open and run the notebooks in the correct order.
+
+## Notebook Execution Order
+
+The notebooks must be run in a specific sequence because later notebooks depend on outputs from earlier ones.
+
+<Steps>
+  <Step title="Data Preparation">
+    **Run first:** `NBAPredict.ipynb`
+    
+    This notebook:
+    - Downloads the NBA dataset from Kaggle
+    - Cleans and aggregates game logs into per-team-season statistics
+    - Creates train/validation/test splits
+    - Generates multiple feature transformations (baseline, polynomial, PCA)
+    - Saves processed data to `./data/processed/`
+    
+    <Info>
+    This notebook must complete successfully before running any model notebooks. It creates the training data used by all models.
+    </Info>
+  </Step>
+
+  <Step title="Exploratory Analysis (Optional)">
+    **Run second (optional):** `exploratory_data_analysis.ipynb`
+    
+    This notebook:
+    - Performs sanity checks on the processed data
+    - Visualizes feature distributions
+    - Explores relationships with the playoff target variable
+    
+    <Tip>
+    This notebook is optional but recommended for understanding the dataset before training models.
+    </Tip>
+  </Step>
+
+  <Step title="Model Training">
+    **Run in any order:** Model notebooks
+    
+    Train each model family independently. These can be run in parallel:
+    
+    - **`LogPredict.ipynb`** - Custom logistic regression with L2 regularization
+    - **`KNNPredict.ipynb`** - K-nearest neighbors using scikit-learn
+    - **`NeuralNetworkPredict.ipynb`** - Neural networks with TensorFlow/Keras
+    
+    Each notebook:
+    - Loads processed data from `./data/processed/`
+    - Trains models with different hyperparameters
+    - Evaluates on validation set
+    - Saves the best model to `./models/<model_type>/`
+    - Saves results to `./results/<model_type>/`
+  </Step>
+
+  <Step title="Model Comparison">
+    **Run last:** `ModelComparison.ipynb`
+    
+    This notebook:
+    - Loads the best model from each family
+    - Evaluates all models on the test set
+    - Compares accuracy, precision, recall, F1, and AUC
+    - Generates comparison visualizations
+    
+    <Warning>
+    This notebook requires that at least one model has been trained and saved. Run at least one model notebook before this.
+    </Warning>
+  </Step>
+</Steps>
+
+## Opening Notebooks
+
+### Using Jupyter Notebook
+
+1. Activate your virtual environment:
+   ```bash
+   source venv/bin/activate  # macOS/Linux
+   venv\Scripts\activate     # Windows
+   ```
+
+2. Start Jupyter Notebook:
+   ```bash
+   jupyter notebook
+   ```
+
+3. Your browser will open automatically. Navigate to the notebook you want to run.
+
+### Using JupyterLab
+
+JupyterLab provides a more modern interface:
+
+1. Install JupyterLab (if not already installed):
+   ```bash
+   pip install jupyterlab
+   ```
+
+2. Start JupyterLab:
+   ```bash
+   jupyter lab
+   ```
+
+### Using VS Code / Cursor
+
+1. Install the Jupyter extension for VS Code/Cursor
+
+2. Open the project folder in your editor
+
+3. Click on any `.ipynb` file to open it
+
+4. Select the correct kernel (your `venv` environment) from the top-right kernel selector
+
+<Tip>
+VS Code and Cursor provide excellent inline variable inspection and debugging capabilities for notebooks.
+</Tip>
+
+## Executing Notebooks
+
+### Run All Cells
+
+To execute the entire notebook from top to bottom:
+
+- **Jupyter Notebook:** Cell → Run All
+- **JupyterLab:** Run → Run All Cells
+- **VS Code/Cursor:** Click "Run All" button at the top
+
+### Run Cells Sequentially
+
+To execute cells one at a time:
+
+- **Jupyter:** Click the "Run" button or press `Shift + Enter`
+- **VS Code/Cursor:** Click the play button next to each cell or press `Shift + Enter`
+
+<Warning>
+Always run cells in order from top to bottom. Running cells out of order can lead to errors or inconsistent state.
+</Warning>
+
+### Restart Kernel
+
+If you need to clear all variables and start fresh:
+
+- **Jupyter:** Kernel → Restart & Clear Output
+- **VS Code/Cursor:** Click the restart button in the notebook toolbar
+
+## Expected Outputs
+
+### NBAPredict.ipynb
+
+**Expected output:**
+```
+Kaggle credentials loaded!
+Dataset downloaded to ./data
+Downloaded files:
+  - ./data/Games.csv
+  - ./data/TeamStatistics.csv
+  - ./data/Players.csv
+  ...
+```
+
+**Generated files:**
+- `./data/processed/X_train_scaled.npy`
+- `./data/processed/X_val_scaled.npy`
+- `./data/processed/X_test_scaled.npy`
+- `./data/processed/X_train_poly2.npy`, `X_train_poly3.npy`, `X_train_pca.npy` (and val/test equivalents)
+- `./data/processed/y_train.npy`, `y_val.npy`, `y_test.npy`
+
+### Model Notebooks (LogPredict, KNNPredict, NeuralNetworkPredict)
+
+**Expected output:**
+```
+Baseline (untransformed): Train=(446, 27), Val=(120, 27), Test=(120, 27)
+Polynomial degree 2: Train=(446, 405), Val=(120, 405), Test=(120, 405)
+Polynomial degree 3: Train=(446, 4059), Val=(120, 4059), Test=(120, 4059)
+PCA (95% variance): Train=(446, 13), Val=(120, 13), Test=(120, 13)
+```
+
+Each model notebook will print training progress, validation metrics, and save:
+- Model weights/parameters to `./models/<model_type>/`
+- Performance metrics to `./results/<model_type>/`
+
+### ModelComparison.ipynb
+
+**Expected output:**
+- Comparison tables showing accuracy, precision, recall, F1, and AUC for each model
+- Visualizations comparing model performance
+- Identification of the best performing model overall
+
+## Troubleshooting
+
+### Kernel Dies or Crashes
+
+If your kernel crashes during execution:
+- **Neural network training** is memory-intensive. Try closing other applications.
+- **Polynomial features** (especially degree 3) create large arrays. Ensure you have sufficient RAM.
+
+### ModuleNotFoundError
+
+If you see import errors:
+```bash
+# Ensure all packages are installed
+pip install -r requirements.txt
+
+# Verify the correct kernel is selected
+pip list | grep tensorflow
+```
+
+### Data Files Not Found
+
+If notebooks can't find processed data:
+- Ensure `NBAPredict.ipynb` completed successfully
+- Check that `./data/processed/` directory exists and contains `.npy` files
+- Verify you're running notebooks from the project root directory
+
+### Kaggle Authentication Errors
+
+If you see 401/403 errors:
+- Review the [Kaggle API setup guide](/guides/kaggle-api)
+- Verify your `.env` file is configured correctly
+- Check that credentials are loaded before the download cell
+
+## Tips for Efficient Workflow
+
+<Tip>
+**Save frequently:** Notebooks auto-save, but manually save (Ctrl+S / Cmd+S) before running long-running cells.
+</Tip>
+
+<Tip>
+**Use markdown cells:** Add notes and observations directly in the notebooks to track experiments.
+</Tip>
+
+<Tip>
+**Monitor resource usage:** Use `htop` (Linux/Mac) or Task Manager (Windows) to monitor memory and CPU during training.
+</Tip>
+
+<Tip>
+**Checkpoint long runs:** The neural network notebook especially can take time to train. Consider saving intermediate results.
+</Tip>
+
+## Next Steps
+
+Once you're comfortable running notebooks:
+
+1. [Explore the training workflow](/guides/training) in depth
+2. Experiment with different hyperparameters
+3. Try modifying feature engineering in `NBAPredict.ipynb`

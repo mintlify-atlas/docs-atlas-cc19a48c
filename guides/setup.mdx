@@ -1,0 +1,130 @@
+---
+title: 'Environment Setup'
+description: 'Set up your Python environment and install dependencies for NBAPredict'
+---
+
+## Prerequisites
+
+Before you begin, ensure you have the following installed:
+
+- **Python 3.10+** (recommended)
+- **pip** package manager
+- **Git** (for cloning the repository)
+
+<Info>
+This project uses TensorFlow, scikit-learn, and other data science libraries. A virtual environment is strongly recommended to avoid dependency conflicts.
+</Info>
+
+## Installation Steps
+
+<Steps>
+  <Step title="Clone the repository">
+    Clone the NBAPredict repository to your local machine:
+    
+    ```bash
+    git clone <repository-url>
+    cd NBAPredict
+    ```
+  </Step>
+
+  <Step title="Create a virtual environment">
+    Create and activate a Python virtual environment:
+    
+    **On macOS/Linux:**
+    ```bash
+    python3 -m venv venv
+    source venv/bin/activate
+    ```
+    
+    **On Windows:**
+    ```bash
+    python -m venv venv
+    venv\Scripts\activate
+    ```
+    
+    <Tip>
+    You should see `(venv)` appear in your terminal prompt, indicating the virtual environment is active.
+    </Tip>
+  </Step>
+
+  <Step title="Install dependencies">
+    Install all required Python packages using the requirements file:
+    
+    ```bash
+    pip install -r requirements.txt
+    ```
+    
+    This will install the following packages:
+    - **pandas** - Data manipulation and analysis
+    - **numpy** - Numerical computing
+    - **kaggle** - Kaggle API client
+    - **python-dotenv** - Environment variable management
+    - **tensorflow** - Deep learning framework
+    - **scikit-learn** - Machine learning utilities
+    - **matplotlib** - Plotting and visualization
+    - **seaborn** - Statistical data visualization
+  </Step>
+
+  <Step title="Configure environment variables">
+    Copy the example environment file and configure it with your credentials:
+    
+    ```bash
+    cp .env.example .env
+    ```
+    
+    See the [Kaggle API guide](/guides/kaggle-api) for details on obtaining and configuring your Kaggle credentials.
+  </Step>
+
+  <Step title="Verify installation">
+    Verify that all packages are installed correctly:
+    
+    ```bash
+    python -c "import pandas, numpy, kaggle, tensorflow, sklearn; print('All packages installed successfully!')"
+    ```
+    
+    If this command runs without errors, you're ready to proceed!
+  </Step>
+</Steps>
+
+## Troubleshooting
+
+### TensorFlow Installation Issues
+
+If you encounter issues installing TensorFlow:
+
+<Warning>
+On Apple Silicon (M1/M2) Macs, you may need to install TensorFlow using conda instead of pip for optimal performance.
+</Warning>
+
+```bash
+conda install -c apple tensorflow-deps
+pip install tensorflow-macos
+```
+
+### Kaggle Package Not Found
+
+If the Kaggle package fails to install, try upgrading pip first:
+
+```bash
+pip install --upgrade pip
+pip install kaggle
+```
+
+### Import Errors
+
+If you see import errors when running notebooks, ensure your Jupyter kernel is using the correct virtual environment:
+
+```bash
+pip install ipykernel
+python -m ipykernel install --user --name=venv
+```
+
+Then select the `venv` kernel in your notebook interface.
+
+## Next Steps
+
+Once your environment is set up:
+
+1. [Configure Kaggle API credentials](/guides/kaggle-api)
+2. [Learn how to run the notebooks](/guides/running-notebooks)
+3. [Explore the training workflow](/guides/training)

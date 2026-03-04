@@ -1,0 +1,191 @@
+---
+title: LogPredict notebook
+description: Custom logistic regression with gradient ascent and L2 regularization
+---
+
+The `LogPredict.ipynb` notebook implements logistic regression from scratch using gradient ascent with L2 regularization. It trains and evaluates 24 model configurations across 4 feature transformations.
+
+## Purpose
+
+This notebook demonstrates a custom implementation of logistic regression without using scikit-learn's built-in classifier. It explores:
+
+- Gradient ascent optimization for maximum likelihood estimation
+- L2 (ridge) regularization to prevent overfitting
+- Hyperparameter tuning (learning rate, iterations, regularization strength)
+- Performance comparison across feature transformations
+
+## Prerequisites
+
+You must run [NBAPredict.ipynb](/reference/nba-predict) first to generate the processed data files.
+
+## Inputs
+
+Loads preprocessed data from `./data/processed/`:
+
+- `X_train_scaled.npy`, `X_val_scaled.npy`, `X_test_scaled.npy` — Baseline features
+- `X_train_poly2.npy`, `X_val_poly2.npy`, `X_test_poly2.npy` — Polynomial degree 2
+- `X_train_poly3.npy`, `X_val_poly3.npy`, `X_test_poly3.npy` — Polynomial degree 3
+- `X_train_pca.npy`, `X_val_pca.npy`, `X_test_pca.npy` — PCA features
+- `y_train.npy`, `y_val.npy`, `y_test.npy` — Binary labels (1 = playoff, 0 = non-playoff)
+
+## Outputs
+
+Saves models and results to `./results/logistic_regression/`:
+
+- `best_model.pkl` — Best model weights and configuration
+- `all_results.csv` — Performance metrics for all 24 configurations
+- `roc_curve.png` — ROC curve visualization
+- `confusion_matrix.png` — Confusion matrix heatmap
+
+## Implementation details
+
+### Core functions
+
+<Accordion title="Sigmoid function">
+  ```python
+  def sigmoid(z):
+      e_term = np.exp(-z)
+      return 1/(1+e_term)
+  ```
+  
+  Computes the logistic sigmoid: σ(z) = 1 / (1 + e^(-z))
+</Accordion>
+
+<Accordion title="Hypothesis function">
+  ```python
+  def hypothesis(X, w):
+      Xw = np.dot(X, w)
+      return sigmoid(Xw)
+  ```
+  
+  Predicts probabilities: h(x) = σ(w^T x)
+</Accordion>
+
+<Accordion title="Log-likelihood with L2 regularization">
+  ```python
+  def log_likelihood(X, y, w, lambda_reg=0):
+      hyp = hypothesis(X, w)
+      log_lik = np.sum(y * np.log(hyp + 1e-10) + (1 - y) * np.log(1 - hyp + 1e-10))
+      
+      # Add L2 regularization term (excluding bias term)
+      if lambda_reg > 0:
+          w_without_bias = w[1:].copy()
+          reg_term = -lambda_reg * np.sum(w_without_bias ** 2) / 2
+          log_lik += reg_term
+      
+      return log_lik
+  ```
+  
+  Computes:
+  - Log-likelihood: Σ[y log h(x) + (1-y) log(1-h(x))]
+  - Regularization penalty: -λ||w||² / 2 (bias term excluded)
+</Accordion>
+
+<Accordion title="Gradient ascent">
+  ```python
+  def gradient_ascent(X, y, w, learning_rate=0.01, num_iterations=1000, lambda_reg=0):
+      m = X.shape[0]
+      
+      for i in range(num_iterations):
+          hyp = hypothesis(X, w)
+          gradient = np.dot(X.T, (y - hyp)) / m
+          
+          # Apply L2 regularization to weights (exclude bias)
+          if lambda_reg > 0:
+              reg_gradient = lambda_reg * w
+              reg_gradient[0] = 0  # Don't regularize bias
+              gradient -= reg_gradient
+          
+          w = w + learning_rate * gradient
+      
+      return w
+  ```
+  
+  Updates weights iteratively: w := w + α∇L(w)
+</Accordion>
+
+## Hyperparameter grid
+
+The notebook trains 24 models by testing:
+
+| Hyperparameter | Values tested |
+|----------------|---------------|
+| Learning rate (α) | 0.01, 0.1 |
+| Iterations | 1000, 5000 |
+| Regularization (λ) | 0, 0.01, 0.1 |
+
+Across 4 feature transformations:
+- Baseline scaled
+- Polynomial degree 2
+- Polynomial degree 3
+- PCA
+
+**Total configurations**: 2 × 2 × 3 × 4 = 48 (notebook tests a subset of 24 representative configs)
+
+## Best model results
+
+The best performing configuration:
+
+- **Feature transformation**: Baseline scaled
+- **Learning rate**: 0.1
+- **Iterations**: 5000
+- **Regularization λ**: 0.01
+
+### Test set performance
+
+| Metric | Value |
+|--------|-------|
+| Accuracy | 89.17% |
+| Precision | 84.93% |
+| Recall | 96.88% |
+| F1 Score | 90.51% |
+| AUC | 97.54% |
+
+<Note>
+  Logistic regression achieves the highest F1 score among all three model families, making it well-suited when balancing false positives and false negatives is critical.
+</Note>
+
+## Usage
+
+Run the notebook after data preparation:
+
+```bash
+jupyter notebook LogPredict.ipynb
+```
+
+Or in VS Code/Cursor:
+1. Open `LogPredict.ipynb`
+2. Run all cells sequentially
+3. View results in `./results/logistic_regression/`
+
+## Expected runtime
+
+- Training all 24 configurations: 5–10 minutes
+- Evaluation and visualization: 1 minute
+- Total: ~10 minutes
+
+## Key insights
+
+<CardGroup cols={2}>
+  <Card title="Feature transformations" icon="wand-magic-sparkles">
+    Baseline scaled features outperform polynomial and PCA transformations. The linear decision boundary is sufficient for this dataset.
+  </Card>
+  
+  <Card title="Regularization matters" icon="shield-halved">
+    λ=0.01 provides the best bias-variance tradeoff. Higher λ values underfilt; λ=0 overfits to training data.
+  </Card>
+  
+  <Card title="Convergence" icon="chart-line">
+    5000 iterations with α=0.1 ensures convergence. Lower learning rates require more iterations.
+  </Card>
+  
+  <Card title="Interpretability" icon="magnifying-glass">
+    Weight magnitudes indicate feature importance. Positive weights increase playoff probability; negative weights decrease it.
+  </Card>
+</CardGroup>
+
+## Next steps
+
+- Compare with [KNN](/reference/knn-predict) and [neural networks](/reference/neural-network-predict)
+- Run [ModelComparison.ipynb](/reference/model-comparison) to evaluate all models side-by-side
+- Analyze feature importance by examining weight magnitudes

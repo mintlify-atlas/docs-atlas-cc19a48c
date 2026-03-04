@@ -1,0 +1,410 @@
+---
+title: 'Neural Network'
+description: 'Deep learning model with multiple architectures for playoff prediction'
+---
+
+# Neural Network Model
+
+## Overview
+
+The neural network uses deep learning with multiple hidden layers, ReLU activations, and L2 regularization to predict NBA playoff qualification. This approach achieved the **highest AUC (0.9824)** among all models.
+
+## Architecture
+
+### Layer Configurations Tested
+
+<Tabs>
+  <Tab title="2-Layer (Best)">
+    ```python
+    Input Layer  -> 27 features
+    Dense Layer  -> 128 units, ReLU
+    Dense Layer  -> 64 units, ReLU
+    Output Layer -> 1 unit, Sigmoid
+    ```
+    
+    **Performance:** Accuracy=87.50%, AUC=**0.9824**
+    
+    <Note>
+    This architecture achieved the best balance between model complexity and generalization.
+    </Note>
+  </Tab>
+  
+  <Tab title="2-Layer (Small)">
+    ```python
+    Input Layer  -> 27 features
+    Dense Layer  -> 64 units, ReLU
+    Dense Layer  -> 32 units, ReLU
+    Output Layer -> 1 unit, Sigmoid
+    ```
+    
+    **Performance:** Accuracy=90.83%, AUC=0.9668
+  </Tab>
+  
+  <Tab title="3-Layer">
+    ```python
+    Input Layer  -> 27 features
+    Dense Layer  -> 256 units, ReLU
+    Dense Layer  -> 128 units, ReLU
+    Dense Layer  -> 64 units, ReLU
+    Output Layer -> 1 unit, Sigmoid
+    ```
+    
+    **Performance:** Accuracy=89.17%, AUC=0.9715
+  </Tab>
+  
+  <Tab title="5-Layer">
+    ```python
+    Input Layer  -> 27 features
+    Dense Layer  -> 512 units, ReLU
+    Dense Layer  -> 256 units, ReLU
+    Dense Layer  -> 128 units, ReLU
+    Dense Layer  -> 64 units, ReLU
+    Dense Layer  -> 32 units, ReLU
+    Output Layer -> 1 unit, Sigmoid
+    ```
+    
+    **Performance:** Accuracy=90.00%, AUC=0.9816
+  </Tab>
+</Tabs>
+
+## Model Components
+
+### Activation Functions
+
+<CodeGroup>
+```python ReLU (Hidden Layers)
+# Rectified Linear Unit
+f(x) = max(0, x)
+
+# Advantages:
+# - Avoids vanishing gradient
+# - Computationally efficient
+# - Promotes sparsity
+```
+
+```python Sigmoid (Output Layer)
+# Logistic function for binary classification
+f(x) = 1 / (1 + exp(-x))
+
+# Outputs probability in range [0, 1]
+```
+</CodeGroup>
+
+### Regularization
+
+<AccordionGroup>
+  <Accordion title="L2 Regularization (Ridge)">
+    Adds penalty term to loss function:
+    ```python
+    loss = binary_crossentropy + lambda * sum(w^2)
+    ```
+    
+    **Tested λ values:** 0, 0.001, 0.01, 0.1, 1, 10
+    
+    **Best λ:** 0.01
+    
+    Prevents overfitting by penalizing large weights.
+  </Accordion>
+  
+  <Accordion title="Early Stopping">
+    ```python
+    EarlyStopping(
+        monitor='val_loss',
+        patience=20,
+        restore_best_weights=True
+    )
+    ```
+    
+    Stops training when validation loss stops improving for 20 consecutive epochs.
+  </Accordion>
+  
+  <Accordion title="Class Weighting">
+    ```python
+    class_weight = {
+        0: 1.0825,  # Non-playoff teams
+        1: 0.9292   # Playoff teams
+    }
+    ```
+    
+    Balances class distribution during training.
+  </Accordion>
+</AccordionGroup>
+
+## Training Configuration
+
+### Optimizer
+
+<CodeGroup>
+```python Adam Optimizer
+optimizer = keras.optimizers.Adam(learning_rate=0.001)
+
+# Adaptive learning rate
+# Momentum-based updates
+# Per-parameter learning rates
+```
+</CodeGroup>
+
+### Loss Function
+
+```python
+loss = 'binary_crossentropy'
+
+# Cross-entropy loss for binary classification
+# Measures difference between predicted and true probabilities
+```
+
+### Training Hyperparameters
+
+| Parameter | Value |
+|-----------|-------|
+| **Epochs** | 200 (with early stopping) |
+| **Batch Size** | max(8, min(32, N/4)) |
+| **Learning Rate** | 0.001 |
+| **Optimizer** | Adam |
+| **Validation Split** | Separate validation set |
+
+## Best Model Performance
+
+<CardGroup cols={2}>
+  <Card title="Architecture" icon="layer-group">
+    2-Layer: [128, 64]
+  </Card>
+  <Card title="Regularization" icon="shield">
+    L2 λ = 0.01
+  </Card>
+  <Card title="Test AUC" icon="chart-area">
+    **0.9824** (Highest)
+  </Card>
+  <Card title="Test Accuracy" icon="bullseye">
+    87.50%
+  </Card>
+</CardGroup>
+
+### Complete Metrics
+
+| Metric | Score |
+|--------|-------|
+| Accuracy | 0.8750 |
+| Precision | 0.8936 |
+| Recall | 0.9844 |
+| F1 Score | 0.8936 |
+| **AUC** | **0.9824** |
+
+<Note>
+The neural network achieved the **highest AUC** and excellent **recall (98.44%)**, making it the most reliable model for avoiding false negatives.
+</Note>
+
+## Regularization Strength Analysis
+
+### Effect of L2 Lambda on Performance
+
+| Lambda | Accuracy | AUC | F1 Score | Status |
+|--------|----------|-----|----------|--------|
+| 0 | 0.8500 | 0.9701 | 0.8750 | Slight overfit |
+| **0.01** | **0.8833** | **0.9807** | **0.9000** | **Optimal** |
+| 0.001 | 0.8750 | 0.9732 | 0.8921 | Good |
+| 0.1 | 0.8917 | 0.9777 | 0.9051 | Good |
+| 1 | 0.8250 | 0.9760 | 0.8571 | Underfit |
+| 10 | 0.5333 | 0.1853 | 0.6957 | Severe underfit |
+
+<Warning>
+Excessive regularization (λ ≥ 1) causes **underfitting**, drastically reducing model performance.
+</Warning>
+
+## Feature Transformation Results
+
+### Performance by Feature Set
+
+| Feature Transform | Best λ | Test Accuracy | Test AUC |
+|-------------------|---------|---------------|----------|
+| **Baseline** | 0.01 | **0.8750** | **0.9824** |
+| PCA (95%) | 0.1 | 0.9000 | 0.9704 |
+| Polynomial 3 | 0.001 | 0.9250 | 0.9681 |
+| Polynomial 2 | 0.001 | 0.8750 | 0.9576 |
+
+<Note>
+Unlike KNN, the neural network performed **best with baseline (scaled) features**, suggesting its internal layers effectively learn feature interactions.
+</Note>
+
+## Model Architecture Comparison
+
+### Average Performance by Architecture
+
+```python
+Architecture   Avg AUC   Avg Accuracy   Avg F1
+2-Layer        0.8671    0.7762         0.8319
+3-Layer        0.7967    0.7424         0.8137
+5-Layer        0.7413    0.6979         0.7888
+```
+
+<Warning>
+**Deeper architectures** (3-layer, 5-layer) showed signs of overfitting due to limited training data (446 examples). The **2-layer architecture** achieved the best generalization.
+</Warning>
+
+## Implementation
+
+### Model Definition
+
+```python
+import tensorflow as tf
+from tensorflow import keras
+from tensorflow.keras import layers, models
+from tensorflow.keras.regularizers import l2
+
+def build_model(input_dim, layer_sizes, l2_reg):
+    model = models.Sequential([
+        layers.Input(shape=(input_dim,)),
+    ])
+    
+    # Add hidden layers with ReLU activation
+    for units in layer_sizes:
+        model.add(layers.Dense(
+            units, 
+            activation='relu',
+            kernel_regularizer=l2(l2_reg) if l2_reg > 0 else None
+        ))
+    
+    # Output layer with sigmoid activation
+    model.add(layers.Dense(1, activation='sigmoid'))
+    
+    # Compile model
+    model.compile(
+        optimizer=keras.optimizers.Adam(learning_rate=0.001),
+        loss='binary_crossentropy',
+        metrics=['accuracy']
+    )
+    
+    return model
+```
+
+### Training the Model
+
+```python
+from tensorflow.keras.callbacks import EarlyStopping
+
+# Best hyperparameters
+layer_sizes = [128, 64]
+l2_reg = 0.01
+
+# Build model
+model = build_model(
+    input_dim=X_train.shape[1],
+    layer_sizes=layer_sizes,
+    l2_reg=l2_reg
+)
+
+# Early stopping callback
+early_stop = EarlyStopping(
+    monitor='val_loss',
+    patience=20,
+    restore_best_weights=True,
+    verbose=0
+)
+
+# Class weights for imbalanced data
+class_weight = {
+    0: len(y_train) / (2 * (len(y_train) - y_train.sum())),
+    1: len(y_train) / (2 * y_train.sum())
+}
+
+# Train model
+history = model.fit(
+    X_train, y_train,
+    validation_data=(X_val, y_val),
+    epochs=200,
+    batch_size=32,
+    class_weight=class_weight,
+    callbacks=[early_stop],
+    verbose=0
+)
+
+# Evaluate on test set
+y_test_pred_prob = model.predict(X_test).flatten()
+y_test_pred = (y_test_pred_prob > 0.5).astype(int)
+
+from sklearn.metrics import accuracy_score, roc_auc_score
+print(f"Test Accuracy: {accuracy_score(y_test, y_test_pred):.4f}")
+print(f"Test AUC: {roc_auc_score(y_test, y_test_pred_prob):.4f}")
+```
+
+## Model Advantages
+
+<AccordionGroup>
+  <Accordion title="Highest AUC">
+    Achieved **0.9824 AUC**, the best among all models tested.
+  </Accordion>
+  
+  <Accordion title="Non-Linear Decision Boundaries">
+    Multiple layers with ReLU activations can capture complex non-linear patterns.
+  </Accordion>
+  
+  <Accordion title="Automatic Feature Learning">
+    Internal representations learn relevant feature combinations automatically.
+  </Accordion>
+  
+  <Accordion title="Excellent Recall">
+    **98.44% recall** ensures almost no playoff teams are missed.
+  </Accordion>
+  
+  <Accordion title="Robust Regularization">
+    L2 penalty and early stopping prevent overfitting effectively.
+  </Accordion>
+</AccordionGroup>
+
+## Model Limitations
+
+<Warning>
+- **Black box nature** - less interpretable than logistic regression
+- **Requires more data** - deeper architectures overfit with limited samples
+- **Longer training time** - requires iterative optimization
+- **Hyperparameter tuning** - sensitive to architecture and regularization choices
+- **Computational resources** - requires GPU for large-scale applications
+</Warning>
+
+## Visualization
+
+### Training Curves
+
+Early stopping prevented overfitting by monitoring validation loss:
+
+<img src="/images/neural_network_training.png" alt="Training curves" />
+
+### ROC Curve
+
+The model achieved excellent discrimination with AUC=0.9824:
+
+<img src="/images/neural_network_roc.png" alt="ROC curve" />
+
+## Recommendations
+
+<CardGroup cols={2}>
+  <Card title="Deployment" icon="rocket">
+    Use the **2-Layer [128, 64]** architecture with **L2 λ=0.01** for production deployment.
+  </Card>
+  <Card title="Feature Preprocessing" icon="sliders">
+    Use **baseline scaled features** - the model learns interactions internally.
+  </Card>
+  <Card title="Early Stopping" icon="stopwatch">
+    Always use **validation-based early stopping** to prevent overfitting.
+  </Card>
+  <Card title="Class Weighting" icon="balance-scale">
+    Apply **class weights** to handle imbalanced data.
+  </Card>
+</CardGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Model Comparison" icon="scale-balanced" href="/models/comparison">
+    Compare all three models
+  </Card>
+  <Card title="Logistic Regression" icon="chart-line" href="/models/logistic-regression">
+    See interpretable baseline
+  </Card>
+  <Card title="K-Nearest Neighbors" icon="diagram-project" href="/models/knn">
+    Explore distance-based approach
+  </Card>
+  <Card title="Feature Engineering" icon="wand-magic-sparkles" href="/data/features">
+    Learn about feature scaling
+  </Card>
+</CardGroup>

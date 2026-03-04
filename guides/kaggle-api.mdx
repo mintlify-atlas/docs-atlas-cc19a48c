@@ -1,0 +1,179 @@
+---
+title: 'Kaggle API Setup'
+description: 'Configure Kaggle API credentials to download NBA datasets'
+---
+
+## Overview
+
+NBAPredict downloads historical NBA data from Kaggle using the [Kaggle API](https://github.com/Kaggle/kaggle-api). This guide walks you through obtaining your API credentials and configuring the project to use them.
+
+<Info>
+The project uses the dataset: **eoinamoore/historical-nba-data-and-player-box-scores**, which contains game logs, player statistics, and team histories.
+</Info>
+
+## Getting Your Kaggle API Credentials
+
+<Steps>
+  <Step title="Create a Kaggle account">
+    If you don't already have one, sign up for a free account at [kaggle.com](https://www.kaggle.com).
+  </Step>
+
+  <Step title="Navigate to Account Settings">
+    1. Click on your profile picture in the top-right corner
+    2. Select **Settings** from the dropdown menu
+    3. Scroll down to the **API** section
+  </Step>
+
+  <Step title="Create API Token">
+    Click the **Create New Token** button. This will download a file called `kaggle.json` to your computer.
+    
+    <Warning>
+    Keep this file secure! It contains your API credentials and should never be committed to version control.
+    </Warning>
+    
+    The `kaggle.json` file will look like this:
+    ```json
+    {
+      "username": "your_username",
+      "key": "your_api_key_here"
+    }
+    ```
+  </Step>
+</Steps>
+
+## Configuring NBAPredict
+
+### Method 1: Using .env File (Recommended)
+
+The project uses a `.env` file to manage credentials securely.
+
+<Steps>
+  <Step title="Copy the example file">
+    From the project root directory:
+    
+    ```bash
+    cp .env.example .env
+    ```
+  </Step>
+
+  <Step title="Edit the .env file">
+    Open `.env` in your text editor and add your Kaggle credentials:
+    
+    ```bash
+    KAGGLE_USERNAME=your_username
+    KAGGLE_KEY=your_api_key_here
+    ```
+    
+    Replace `your_username` and `your_api_key_here` with the values from your `kaggle.json` file.
+  </Step>
+
+  <Step title="Verify .env is gitignored">
+    Ensure `.env` is listed in your `.gitignore` file to prevent accidentally committing credentials:
+    
+    ```bash
+    grep '.env' .gitignore
+    ```
+    
+    <Tip>
+    The `.env.example` file serves as a template and should be committed to version control, but never include actual credentials in it.
+    </Tip>
+  </Step>
+</Steps>
+
+### Method 2: System-wide Configuration (Alternative)
+
+You can also place the `kaggle.json` file in the standard Kaggle API location:
+
+**On macOS/Linux:**
+```bash
+mkdir -p ~/.kaggle
+mv ~/Downloads/kaggle.json ~/.kaggle/
+chmod 600 ~/.kaggle/kaggle.json
+```
+
+**On Windows:**
+```bash
+mkdir %USERPROFILE%\.kaggle
+move %USERPROFILE%\Downloads\kaggle.json %USERPROFILE%\.kaggle\kaggle.json
+```
+
+<Warning>
+If you use this method, the notebooks will still load the `.env` file, but credentials from `~/.kaggle/kaggle.json` will be used as a fallback.
+</Warning>
+
+## How the Project Loads Credentials
+
+The `NBAPredict.ipynb` notebook loads credentials using the following code:
+
+```python
+import os
+from dotenv import load_dotenv
+
+# Load credentials from .env file
+load_dotenv()
+
+# Set Kaggle credentials as environment variables
+os.environ['KAGGLE_USERNAME'] = os.getenv('KAGGLE_USERNAME')
+os.environ['KAGGLE_KEY'] = os.getenv('KAGGLE_KEY')
+
+print("Kaggle credentials loaded!")
+```
+
+This approach uses `python-dotenv` to load environment variables from the `.env` file and sets them for the Kaggle API to use.
+
+## Downloading the Dataset
+
+Once credentials are configured, the notebook downloads the dataset automatically:
+
+```python
+from kaggle.api.kaggle_api_extended import KaggleApi
+
+# Initialize and authenticate
+api = KaggleApi()
+api.authenticate()
+
+# Download NBA dataset
+dataset_name = "eoinamoore/historical-nba-data-and-player-box-scores"
+download_path = "./data"
+
+api.dataset_download_files(dataset_name, path=download_path, unzip=True)
+print(f"Dataset downloaded to {download_path}")
+```
+
+The dataset will be downloaded and extracted to the `./data` directory in your project.
+
+## Troubleshooting
+
+### 401 Unauthorized Error
+
+If you see a 401 error, double-check that:
+- Your username and API key are correct
+- There are no extra spaces or quotes in the `.env` file
+- The `.env` file is in the project root directory
+
+### 403 Forbidden Error
+
+This usually means:
+- You haven't accepted the dataset's terms of use on Kaggle
+- Visit the [dataset page](https://www.kaggle.com/datasets/eoinamoore/historical-nba-data-and-player-box-scores) and click "Download" to accept the terms
+
+### Credentials Not Loading
+
+If credentials aren't loading from `.env`:
+
+```bash
+# Verify the file exists
+ls -la .env
+
+# Check the contents (be careful not to share output)
+cat .env
+```
+
+Ensure the file format is correct with no extra characters or formatting.
+
+## Next Steps
+
+With Kaggle API configured, you're ready to:
+
+1. [Run the notebooks](/guides/running-notebooks) to download and process data
+2. [Train models](/guides/training) on the NBA dataset

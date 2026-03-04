@@ -1,0 +1,245 @@
+---
+title: Exploratory data analysis
+description: Feature distributions, correlations, PCA, and clustering insights from the NBA playoff dataset
+---
+
+## Overview
+
+Exploratory Data Analysis (EDA) reveals key patterns in the NBA playoff prediction dataset. This analysis covers:
+
+- Feature distributions by playoff status
+- Correlation matrix and multicollinearity
+- PCA dimensionality reduction
+- K-means clustering to discover natural groupings
+
+All visualizations are generated from the **training set** (446 team-seasons from 2000-2019) using scaled features.
+
+## Feature distributions
+
+Features show clear separation between playoff and non-playoff teams:
+
+<img src="/images/eda/01_feature_distributions.png" alt="Feature distributions" />
+
+### Key observations
+
+<CardGroup cols={2}>
+  <Card title="Win percentage" icon="trophy">
+    The strongest single predictor. Playoff teams average ~60% win rate, non-playoff teams ~35%.
+  </Card>
+  
+  <Card title="Point differential" icon="arrow-trend-up">
+    Playoff teams typically outscore opponents by 3-5 points per game, while non-playoff teams are often negative.
+  </Card>
+  
+  <Card title="Plus/minus points" icon="chart-line">
+    Highly correlated with point differential (r=0.998), showing consistent team performance.
+  </Card>
+  
+  <Card title="Offensive strength" icon="fire">
+    Playoff teams score 105-115 points per game on average, vs. 95-105 for non-playoff teams.
+  </Card>
+</CardGroup>
+
+### Distribution overlap
+
+Some features show significant overlap between classes:
+
+- **Turnovers**: Both playoff and non-playoff teams average 13-15 per game
+- **Free throw percentage**: Similar distributions (~75-77%)
+- **Personal fouls**: Minimal difference between classes
+
+This overlap suggests these features have lower predictive power individually.
+
+## Feature-target relationships
+
+Box plots for the top 12 features by variance:
+
+<img src="/images/eda/02_feature_target_relationships.png" alt="Feature-target relationships" />
+
+Playoff teams consistently show:
+- **Higher means** for offensive metrics
+- **Lower variance** in key statistics (more consistent performance)
+- **Fewer outliers** in shooting percentages
+
+<Accordion title="Statistical significance">
+  A t-test confirms statistically significant differences (p < 0.001) between playoff and non-playoff teams for:
+  - `win_pct`
+  - `point_diff`
+  - `offensive_strength`
+  - `defensive_strength`
+  - `efg_pct` (effective field goal %)
+</Accordion>
+
+## Correlation analysis
+
+The correlation matrix reveals feature relationships:
+
+<img src="/images/eda/03_correlation_matrix_full.png" alt="Correlation matrix" />
+
+### High correlation pairs (|r| > 0.7)
+
+Several features are highly correlated, indicating potential multicollinearity:
+
+| Feature 1 | Feature 2 | Correlation |
+|-----------|-----------|-------------|
+| `plusMinusPoints_mean` | `point_diff` | 0.998 |
+| `threePointersMade_mean` | `threePointersAttempted_mean` | 0.976 |
+| `avg_points_allowed` | `defensive_strength` | 0.963 |
+| `avg_points_scored` | `offensive_strength` | 0.962 |
+| `win_pct` | `point_diff` | 0.955 |
+| `freeThrowsMade_mean` | `freeThrowsAttempted_mean` | 0.936 |
+| `fieldGoalsMade_mean` | `offensive_strength` | 0.906 |
+
+<Warning>
+  High correlation between predictors can cause issues for linear models (multicollinearity). Tree-based models and neural networks are more robust to this.
+</Warning>
+
+### Implications for modeling
+
+- **Feature selection**: Consider removing one feature from highly correlated pairs
+- **Regularization**: L1/L2 penalties can mitigate multicollinearity
+- **PCA**: Dimensionality reduction eliminates correlation by design
+
+## Principal Component Analysis (PCA)
+
+PCA transforms the 27 correlated features into uncorrelated principal components.
+
+### Variance explained
+
+<img src="/images/eda/04c_pca_variance_analysis.png" alt="PCA variance" />
+
+- **PC1** explains **29.6%** of total variance
+- **First 2 components** explain **44.6%** of variance
+- **First 11 components** explain **90%** of variance
+- **First 13 components** explain **95%** of variance
+
+This suggests the data has intrinsic dimensionality around 11-13, much lower than 27.
+
+### Component distributions
+
+<img src="/images/eda/04a_pca_component_distributions.png" alt="PCA component distributions" />
+
+The first few principal components show clear separation between playoff and non-playoff teams, while later components have more overlap.
+
+### 2D visualization
+
+<img src="/images/eda/04b_pca_scatter_2d.png" alt="2D PCA scatter" />
+
+Projecting data onto PC1 and PC2 reveals:
+- Playoff teams (green) cluster in the upper-right
+- Non-playoff teams (red) cluster in the lower-left
+- Some overlap in the middle (borderline playoff teams)
+
+### Feature loadings
+
+<img src="/images/eda/04d_pca_component_loadings.png" alt="PCA loadings" />
+
+**PC1 (29.6% variance)** is most strongly influenced by:
+1. `win_pct` (0.21)
+2. `point_diff` (0.21)
+3. `plusMinusPoints_mean` (0.21)
+4. `offensive_strength` (0.20)
+5. `avg_points_scored` (0.19)
+
+PC1 represents overall team quality and success.
+
+**PC2 (15.0% variance)** emphasizes:
+1. `threePointersAttempted_mean` (0.35)
+2. `threePointersMade_mean` (0.33)
+3. `fieldGoalsAttempted_mean` (-0.28)
+
+PC2 captures playing style (three-point shooting vs. traditional offense).
+
+## K-means clustering
+
+Unsupervised clustering reveals natural groupings in the data.
+
+### Optimal number of clusters
+
+<img src="/images/eda/05_kmeans_elbow_silhouette.png" alt="K-means optimization" />
+
+Using the **silhouette score** metric, the optimal number of clusters is **K=2** (score: 0.166).
+
+The elbow curve shows diminishing returns after K=3, confirming that 2-3 clusters best describe the data structure.
+
+### Cluster visualization
+
+<img src="/images/eda/06_kmeans_clusters_pca.png" alt="K-means clusters" />
+
+The two discovered clusters roughly correspond to:
+- **Cluster 0**: Lower-performing teams (mostly non-playoff)
+- **Cluster 1**: Higher-performing teams (mostly playoff)
+
+### Cluster composition
+
+<img src="/images/eda/07_cluster_vs_labels.png" alt="Cluster vs labels" />
+
+<CardGroup cols={2}>
+  <Card title="Cluster 0" icon="circle">
+    **263 teams total**
+    - 86 made playoffs (32.7%)
+    - 177 missed playoffs (67.3%)
+    
+    Predominantly non-playoff teams.
+  </Card>
+  
+  <Card title="Cluster 1" icon="circle">
+    **183 teams total**
+    - 154 made playoffs (84.2%)
+    - 29 missed playoffs (15.8%)
+    
+    Predominantly playoff teams.
+  </Card>
+</CardGroup>
+
+### Cluster alignment with labels
+
+<img src="/images/eda/08_cluster_playoff_distribution.png" alt="Cluster distribution" />
+
+The discovered clusters align well with playoff outcomes:
+- **84.2%** of Cluster 1 teams made the playoffs
+- **67.3%** of Cluster 0 teams missed the playoffs
+
+This confirms that playoff/non-playoff teams are naturally separable in the feature space.
+
+## Key insights
+
+<AccordionGroup>
+  <Accordion title="Most predictive features">
+    1. **win_pct** - Win percentage is the single strongest predictor
+    2. **point_diff** - Average point differential per game
+    3. **offensive_strength** - Composite of scoring and field goal efficiency
+    4. **efg_pct** - Effective field goal percentage (accounts for 3-pointers)
+  </Accordion>
+  
+  <Accordion title="Multicollinearity concerns">
+    Features like `plusMinusPoints_mean` and `point_diff` are nearly perfectly correlated (r=0.998). Consider:
+    - Dropping one of each highly correlated pair
+    - Using PCA for dimensionality reduction
+    - Applying regularization (Ridge/Lasso)
+  </Accordion>
+  
+  <Accordion title="Dimensionality reduction">
+    The dataset has intrinsic dimensionality around 11-13 (based on 90-95% variance explained). PCA could reduce model complexity without sacrificing performance.
+  </Accordion>
+  
+  <Accordion title="Class separability">
+    K-means clustering shows playoff and non-playoff teams form distinct groups with 84% purity in the "playoff" cluster. This suggests the classification problem is feasible.
+  </Accordion>
+</AccordionGroup>
+
+## Next steps
+
+<CardGroup cols={3}>
+  <Card title="Model selection" icon="brain" href="/models/overview">
+    Learn which ML models are trained on this data
+  </Card>
+  
+  <Card title="Feature engineering" icon="wrench" href="/models/features">
+    Discover how features are refined for better predictions
+  </Card>
+  
+  <Card title="Model evaluation" icon="chart-bar" href="/models/evaluation">
+    See how models are evaluated and compared
+  </Card>
+</CardGroup>

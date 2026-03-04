@@ -1,0 +1,155 @@
+---
+title: NBAPredict notebook
+description: Data preparation and feature engineering pipeline for NBA playoff prediction
+---
+
+The `NBAPredict.ipynb` notebook is the starting point of the project. It downloads historical NBA data from Kaggle, processes game logs into per-team-season statistics, and creates train/validation/test splits with multiple feature transformations.
+
+## Purpose
+
+This notebook transforms raw NBA game logs into machine learning-ready datasets:
+
+- Downloads the **Historical NBA Data and Player Box Scores** dataset from Kaggle
+- Aggregates game-level statistics into season-level features for each team
+- Creates train/validation/test splits (70%/15%/15%) using chronological ordering
+- Generates multiple feature transformations: baseline scaled, polynomial degree 2, polynomial degree 3, and PCA
+
+## Inputs
+
+<ParamField path="KAGGLE_USERNAME" type="string" required>
+  Your Kaggle username, loaded from `.env` file
+</ParamField>
+
+<ParamField path="KAGGLE_KEY" type="string" required>
+  Your Kaggle API key, loaded from `.env` file
+</ParamField>
+
+## Outputs
+
+The notebook creates the following files in `./data/processed/`:
+
+### Training data
+- `X_train_scaled.npy` — Standardized baseline features (446 samples, 27 features)
+- `X_train_poly2.npy` — Polynomial degree 2 features (446 samples, 405 features)
+- `X_train_poly3.npy` — Polynomial degree 3 features (446 samples, 4,059 features)
+- `X_train_pca.npy` — PCA reduced features (446 samples, 13 components)
+- `y_train.npy` — Training labels (1 = playoff team, 0 = non-playoff team)
+
+### Validation data
+- `X_val_scaled.npy`, `X_val_poly2.npy`, `X_val_poly3.npy`, `X_val_pca.npy` (120 samples each)
+- `y_val.npy` — Validation labels
+
+### Test data
+- `X_test_scaled.npy`, `X_test_poly2.npy`, `X_test_poly3.npy`, `X_test_pca.npy` (120 samples each)
+- `y_test.npy` — Test labels
+
+### Metadata
+- `feature_names.json` — List of 27 engineered feature names
+- `pca_model.pkl` — Fitted PCA transformer
+- `poly2_features.pkl`, `poly3_features.pkl` — Fitted polynomial feature transformers
+- `scaler.pkl` — Fitted StandardScaler
+
+## Key steps
+
+<Steps>
+  <Step title="Load Kaggle credentials">
+    The notebook loads credentials from `.env` and authenticates with the Kaggle API:
+    
+    ```python
+    import os
+    from dotenv import load_dotenv
+    
+    load_dotenv()
+    os.environ['KAGGLE_USERNAME'] = os.getenv('KAGGLE_USERNAME')
+    os.environ['KAGGLE_KEY'] = os.getenv('KAGGLE_KEY')
+    ```
+  </Step>
+
+  <Step title="Download NBA dataset">
+    Downloads the dataset from Kaggle:
+    
+    ```python
+    from kaggle.api.kaggle_api_extended import KaggleApi
+    
+    api = KaggleApi()
+    api.authenticate()
+    
+    dataset_name = "eoinamoore/historical-nba-data-and-player-box-scores"
+    api.dataset_download_files(dataset_name, path="./data", unzip=True)
+    ```
+    
+    The dataset includes:
+    - `TeamStatistics.csv` — 144,594 game records with 48 features
+    - `TeamHistories.csv` — Franchise relocation history
+    - `Games.csv` — Game metadata
+  </Step>
+
+  <Step title="Assign seasons">
+    Maps games to NBA seasons based on date. Games from October–December belong to the season starting that year; games from January–September belong to the previous season:
+    
+    ```python
+    df['gameDateTimeEst'] = pd.to_datetime(df['gameDateTimeEst'], utc=True)
+    df['season'] = df['gameDateTimeEst'].dt.year
+    mask = df['gameDateTimeEst'].dt.month < 10
+    df.loc[mask, 'season'] = df.loc[mask, 'season'] - 1
+    ```
+  </Step>
+
+  <Step title="Aggregate per-team-season statistics">
+    Groups games by team and season, computing:
+    - Mean statistics (FG%, 3P%, FT%, rebounds, assists, steals, blocks, turnovers)
+    - Win percentage
+    - Opponent statistics (defensive metrics)
+    - Advanced metrics (point differential, plus/minus)
+    
+    Creates 27 features per team-season.
+  </Step>
+
+  <Step title="Create train/val/test splits">
+    Splits data chronologically to prevent data leakage:
+    - **Training**: Seasons up to 70th percentile
+    - **Validation**: 70th–85th percentile
+    - **Test**: 85th percentile and later
+    
+    This ensures models are evaluated on future seasons they haven't seen during training.
+  </Step>
+
+  <Step title="Apply feature transformations">
+    Generates four versions of the data:
+    
+    1. **Baseline scaled**: StandardScaler normalization
+    2. **Polynomial degree 2**: Interaction terms and squared features (405 features)
+    3. **Polynomial degree 3**: Cubic and higher-order interactions (4,059 features)
+    4. **PCA**: 13 principal components capturing 95% of variance
+  </Step>
+</Steps>
+
+## Usage
+
+Run this notebook first before training any models:
+
+```bash
+jupyter notebook NBAPredict.ipynb
+```
+
+Or in VS Code/Cursor:
+1. Open `NBAPredict.ipynb`
+2. Select Python 3.10+ kernel
+3. Run all cells
+
+<Warning>
+  You must configure Kaggle credentials in `.env` before running this notebook. See the [Kaggle API guide](/guides/kaggle-api) for setup instructions.
+</Warning>
+
+## Expected runtime
+
+- Dataset download: 1–2 minutes
+- Data processing: 2–3 minutes
+- Total: ~5 minutes
+
+## Next steps
+
+After running this notebook, train models using:
+- [LogPredict.ipynb](/reference/log-predict) — Logistic regression
+- [KNNPredict.ipynb](/reference/knn-predict) — K-nearest neighbors
+- [NeuralNetworkPredict.ipynb](/reference/neural-network-predict) — Neural networks

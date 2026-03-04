@@ -1,0 +1,93 @@
+---
+title: Environment Variables
+description: Configuration and setup of environment variables for the NBAPredict project
+---
+
+The NBAPredict project uses environment variables to securely store API credentials and configuration settings. These variables are managed through a `.env` file in the project root.
+
+## Setup
+
+1. Copy the `.env.example` file to create your own `.env` file:
+   ```bash
+   cp .env.example .env
+   ```
+
+2. Update the `.env` file with your actual credentials
+
+3. The `.env` file is automatically loaded by the `python-dotenv` package
+
+<Warning>
+Never commit your `.env` file to version control. It should always be listed in `.gitignore`.
+</Warning>
+
+## Environment Variables
+
+<ParamField path="KAGGLE_USERNAME" type="string" required>
+  Your Kaggle account username. This is required to authenticate with the Kaggle API for downloading NBA datasets.
+  
+  **Example:**
+  ```bash
+  KAGGLE_USERNAME=your_username
+  ```
+  
+  You can find your Kaggle username by:
+  1. Logging into [Kaggle](https://www.kaggle.com)
+  2. Clicking on your profile in the top-right corner
+  3. Your username is displayed in your profile URL: `kaggle.com/[username]`
+</ParamField>
+
+<ParamField path="KAGGLE_KEY" type="string" required>
+  Your Kaggle API key. This is used alongside your username to authenticate API requests.
+  
+  **Example:**
+  ```bash
+  KAGGLE_KEY=api_key
+  ```
+  
+  To obtain your Kaggle API key:
+  1. Go to your [Kaggle Account Settings](https://www.kaggle.com/settings/account)
+  2. Scroll to the "API" section
+  3. Click "Create New Token"
+  4. A `kaggle.json` file will be downloaded containing your username and key
+  5. Copy the key value from this file
+</ParamField>
+
+## Example Configuration
+
+Here's what your `.env` file should look like with actual values:
+
+```bash
+KAGGLE_USERNAME=johndoe
+KAGGLE_KEY=a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6
+```
+
+## Usage in Code
+
+The environment variables are loaded using the `python-dotenv` package:
+
+```python
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+
+kaggle_username = os.getenv('KAGGLE_USERNAME')
+kaggle_key = os.getenv('KAGGLE_KEY')
+```
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Authentication Failed">
+    If you receive authentication errors when accessing Kaggle:
+    - Verify your credentials are correct
+    - Ensure there are no extra spaces or quotes around the values
+    - Check that your Kaggle API token hasn't expired
+  </Accordion>
+  
+  <Accordion title="Environment Variables Not Loading">
+    - Ensure the `.env` file is in the project root directory
+    - Verify `python-dotenv` is installed: `pip install python-dotenv`
+    - Make sure `load_dotenv()` is called before accessing environment variables
+  </Accordion>
+</AccordionGroup>

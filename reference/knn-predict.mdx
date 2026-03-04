@@ -1,0 +1,229 @@
+---
+title: KNNPredict notebook
+description: K-nearest neighbors classifier with hyperparameter grid search
+---
+
+The `KNNPredict.ipynb` notebook trains K-nearest neighbors (KNN) classifiers using scikit-learn. It performs exhaustive grid search over K values, distance metrics, weighting schemes, and feature transformations to find the optimal configuration.
+
+## Purpose
+
+This notebook explores KNN as a non-parametric approach to playoff prediction:
+
+- Tests multiple K values (number of neighbors)
+- Compares Euclidean vs Manhattan distance metrics
+- Evaluates uniform vs distance-weighted voting
+- Identifies which feature transformation works best for KNN
+
+## Prerequisites
+
+Run [NBAPredict.ipynb](/reference/nba-predict) first to generate processed data files.
+
+## Inputs
+
+Loads preprocessed data from `./data/processed/`:
+
+- `X_train_scaled.npy`, `X_val_scaled.npy`, `X_test_scaled.npy`
+- `X_train_poly2.npy`, `X_val_poly2.npy`, `X_test_poly2.npy`
+- `X_train_poly3.npy`, `X_val_poly3.npy`, `X_test_poly3.npy`
+- `X_train_pca.npy`, `X_val_pca.npy`, `X_test_pca.npy`
+- `y_train.npy`, `y_val.npy`, `y_test.npy`
+
+## Outputs
+
+Saves models and results to `./results/knn/`:
+
+- `best_model.pkl` — Best KNN model with optimal hyperparameters
+- `all_results.csv` — Performance metrics for all configurations
+- `k_value_comparison.png` — Accuracy vs K value plot
+- `confusion_matrix.png` — Test set confusion matrix
+
+## Hyperparameter grid
+
+The notebook tests 128 configurations:
+
+| Hyperparameter | Values tested |
+|----------------|---------------|
+| K (neighbors) | 1, 3, 5, 7, 9, 11, 15, 21 |
+| Distance metric | Euclidean, Manhattan |
+| Weighting | Uniform, Distance-based |
+| Feature transformation | Baseline, Poly2, Poly3, PCA |
+
+**Total configurations**: 8 × 2 × 2 × 4 = 128
+
+## Implementation
+
+### Training a KNN model
+
+```python
+from sklearn.neighbors import KNeighborsClassifier
+
+# Create KNN classifier
+knn = KNeighborsClassifier(
+    n_neighbors=21,
+    metric='manhattan',
+    weights='distance'
+)
+
+# Train on scaled features
+knn.fit(X_train_scaled, y_train)
+
+# Predict on test set
+y_pred = knn.predict(X_test_scaled)
+y_proba = knn.predict_proba(X_test_scaled)[:, 1]
+```
+
+### Distance metrics
+
+<Tabs>
+  <Tab title="Euclidean">
+    **Euclidean distance** (L2 norm):
+    
+    d(x, y) = √(Σ(x_i - y_i)²)
+    
+    Measures straight-line distance in feature space. Sensitive to feature scale—requires standardization.
+    
+    ```python
+    knn = KNeighborsClassifier(n_neighbors=5, metric='euclidean')
+    ```
+  </Tab>
+  
+  <Tab title="Manhattan">
+    **Manhattan distance** (L1 norm):
+    
+    d(x, y) = Σ|x_i - y_i|
+    
+    Measures grid-like distance (sum of absolute differences). More robust to outliers than Euclidean distance.
+    
+    ```python
+    knn = KNeighborsClassifier(n_neighbors=5, metric='manhattan')
+    ```
+  </Tab>
+</Tabs>
+
+### Weighting schemes
+
+<AccordionGroup>
+  <Accordion title="Uniform weighting">
+    All K neighbors vote equally regardless of distance:
+    
+    ```python
+    knn = KNeighborsClassifier(n_neighbors=5, weights='uniform')
+    ```
+    
+    Works well when neighbors are roughly equidistant. Simpler but less flexible.
+  </Accordion>
+  
+  <Accordion title="Distance weighting">
+    Closer neighbors have more influence (weighted by inverse distance):
+    
+    ```python
+    knn = KNeighborsClassifier(n_neighbors=5, weights='distance')
+    ```
+    
+    Weight = 1 / distance
+    
+    Reduces impact of distant neighbors. Generally performs better on complex decision boundaries.
+  </Accordion>
+</AccordionGroup>
+
+## Best model results
+
+The optimal configuration:
+
+- **K**: 21 neighbors
+- **Distance metric**: Manhattan
+- **Weighting**: Distance-based
+- **Feature transformation**: Polynomial degree 3
+
+### Test set performance
+
+| Metric | Value |
+|--------|-------|
+| Accuracy | 81.67% |
+| Precision | 75.00% |
+| Recall | **98.44%** |
+| F1 Score | 85.14% |
+| AUC | 96.60% |
+
+<Note>
+  KNN achieves the highest recall (98.44%) among all three models, meaning it rarely misses actual playoff teams. However, it has the lowest precision (75%)—it flags more false positives.
+</Note>
+
+## Performance by K value
+
+Validation accuracy vs K (using Manhattan distance, distance weighting, Poly3 features):
+
+| K | Validation Accuracy |
+|---|---------------------|
+| 1 | 85.83% |
+| 3 | 87.50% |
+| 5 | 88.33% |
+| 7 | 89.17% |
+| 9 | 89.17% |
+| 11 | 90.00% |
+| 15 | 90.83% |
+| **21** | **91.67%** |
+
+<Tip>
+  Higher K values (15–21) perform best on this dataset. Lower K values (1–5) overfit to training data and are sensitive to noise.
+</Tip>
+
+## Feature transformation impact
+
+KNN performance by feature type (K=21, Manhattan, distance-weighted):
+
+| Transformation | Test AUC |
+|----------------|----------|
+| Baseline scaled | 94.12% |
+| Polynomial degree 2 | 95.48% |
+| **Polynomial degree 3** | **96.60%** |
+| PCA | 92.85% |
+
+**Key insight**: Unlike logistic regression and neural networks, KNN benefits significantly from polynomial features. The explicit feature interactions help KNN identify similar teams in high-dimensional space.
+
+## Usage
+
+Run the notebook after data preparation:
+
+```bash
+jupyter notebook KNNPredict.ipynb
+```
+
+Or in VS Code/Cursor:
+1. Open `KNNPredict.ipynb`
+2. Run all cells sequentially
+3. View results in `./results/knn/`
+
+## Expected runtime
+
+- Training 128 configurations: 10–15 minutes
+- Evaluation and visualization: 2 minutes
+- Total: ~15 minutes
+
+<Warning>
+  KNN with polynomial degree 3 features (4,059 dimensions) is computationally expensive. Prediction time scales with training set size and feature dimensionality.
+</Warning>
+
+## Strengths and weaknesses
+
+<CardGroup cols={2}>
+  <Card title="Strengths" icon="circle-check">
+    - No training phase (lazy learning)
+    - Non-parametric (no assumptions about data distribution)
+    - Excellent recall (98.44%)
+    - Works well with polynomial features
+  </Card>
+  
+  <Card title="Weaknesses" icon="circle-xmark">
+    - Slow prediction (must compute distances to all training samples)
+    - Memory-intensive (stores entire training set)
+    - Lower precision (75%)
+    - Sensitive to feature scaling
+  </Card>
+</CardGroup>
+
+## Next steps
+
+- Compare with [logistic regression](/reference/log-predict) and [neural networks](/reference/neural-network-predict)
+- Run [ModelComparison.ipynb](/reference/model-comparison) for side-by-side evaluation
+- Experiment with other distance metrics (Minkowski, Chebyshev)

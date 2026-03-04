@@ -1,0 +1,109 @@
+---
+title: Data overview
+description: Learn about the dataset used to train the NBA playoff prediction model
+---
+
+## Dataset source
+
+The NBAPredict system uses historical NBA data from the **Historical NBA Data and Player Box Scores** dataset on Kaggle, created by eoinamoore. This comprehensive dataset includes:
+
+- **144,594 team game records** from 1946 to 2025
+- **48 statistical features** per game
+- Coverage of **80 NBA seasons**
+- Team histories and franchise lineages
+
+<Card title="Dataset on Kaggle" icon="database" href="https://www.kaggle.com/datasets/eoinamoore/historical-nba-data-and-player-box-scores">
+  Access the original dataset with team statistics, player statistics, game schedules, and team histories.
+</Card>
+
+## Data files
+
+The dataset includes several CSV files:
+
+<CardGroup cols={2}>
+  <Card title="TeamStatistics.csv" icon="chart-line">
+    Game-by-game statistics for every team including points, rebounds, assists, shooting percentages, and advanced metrics
+  </Card>
+  
+  <Card title="TeamHistories.csv" icon="clock-rotate-left">
+    Franchise lineage tracking team relocations and name changes throughout NBA history
+  </Card>
+  
+  <Card title="Games.csv" icon="basketball">
+    Complete game schedule and results information
+  </Card>
+  
+  <Card title="Players.csv" icon="users">
+    Player roster and biographical data
+  </Card>
+</CardGroup>
+
+## Key statistics
+
+The TeamStatistics.csv file contains the following categories of features:
+
+### Basic game information
+- `gameId`, `gameDateTimeEst`
+- `teamCity`, `teamName`, `teamId`
+- `opponentTeamCity`, `opponentTeamName`, `opponentTeamId`
+- `home`, `win`
+
+### Scoring statistics
+- `teamScore`, `opponentScore`
+- `q1Points`, `q2Points`, `q3Points`, `q4Points`
+- `benchPoints`, `pointsFastBreak`, `pointsFromTurnovers`
+- `pointsInThePaint`, `pointsSecondChance`
+
+### Shooting statistics
+- `fieldGoalsAttempted`, `fieldGoalsMade`, `fieldGoalsPercentage`
+- `threePointersAttempted`, `threePointersMade`, `threePointersPercentage`
+- `freeThrowsAttempted`, `freeThrowsMade`, `freeThrowsPercentage`
+
+### Other statistics
+- `assists`, `blocks`, `steals`
+- `reboundsDefensive`, `reboundsOffensive`, `reboundsTotal`
+- `foulsPersonal`, `turnovers`
+- `plusMinusPoints`, `numMinutes`
+
+### Game context
+- `biggestLead`, `biggestScoringRun`
+- `leadChanges`, `timesTied`
+- `timeoutsRemaining`
+- `seasonWins`, `seasonLosses`
+- `coachId`
+
+## Data quality and preprocessing
+
+The dataset spans from **November 1946 to December 2025**, covering the entire history of the NBA and BAA (Basketball Association of America). The data includes:
+
+- **Current NBA teams**: 30 active franchises
+- **Historical teams**: Relocated and discontinued franchises
+- **International games**: Exhibition and special event games
+
+<Accordion title="Data quality notes">
+  - 2 games have unparsable dates (marked as NaT)
+  - Team relocations are tracked through consistent `teamId` values
+  - Some advanced statistics (e.g., `pointsInThePaint`) have missing values for older games
+  - The dataset includes non-NBA teams from international leagues for exhibition games
+</Accordion>
+
+## Season structure
+
+NBA seasons span two calendar years (October through June). The data preprocessing assigns games to seasons based on:
+
+- **October-December games**: Assigned to the starting year (e.g., October 2024 → 2024-25 season)
+- **January-June games**: Assigned to the previous year (e.g., January 2025 → 2024-25 season)
+
+This ensures all games in a single NBA season are grouped together for analysis.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Data preparation" icon="filter" href="/data/preparation">
+    Learn how the raw data is processed and features are engineered
+  </Card>
+  
+  <Card title="Exploratory analysis" icon="chart-mixed" href="/data/exploratory-analysis">
+    Explore feature distributions, correlations, and clustering patterns
+  </Card>
+</CardGroup>

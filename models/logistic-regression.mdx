@@ -1,0 +1,242 @@
+---
+title: 'Logistic Regression'
+description: 'Custom logistic regression with L2 regularization for playoff prediction'
+---
+
+# Logistic Regression Model
+
+## Overview
+
+The logistic regression model uses a custom gradient ascent implementation with L2 regularization to predict NBA playoff team qualification. This classical approach provides a strong baseline with interpretable results.
+
+## Model Architecture
+
+### Core Components
+
+<Steps>
+  <Step title="Sigmoid Function">
+    Transforms linear predictions to probabilities:
+    ```python
+    def sigmoid(z):
+        return 1 / (1 + np.exp(-z))
+    ```
+  </Step>
+  
+  <Step title="Hypothesis Function">
+    Combines features with learned weights:
+    ```python
+    def hypothesis(X, w):
+        return sigmoid(np.dot(X, w))
+    ```
+  </Step>
+  
+  <Step title="Log-Likelihood with Regularization">
+    Objective function with L2 penalty:
+    ```python
+    def log_likelihood(X, y, w, lambda_reg=0):
+        hyp = hypothesis(X, w)
+        log_lik = np.sum(y * np.log(hyp + 1e-10) + 
+                        (1 - y) * np.log(1 - hyp + 1e-10))
+        if lambda_reg > 0:
+            reg_term = -lambda_reg * np.sum(w[1:] ** 2) / 2
+            log_lik += reg_term
+        return log_lik
+    ```
+  </Step>
+</Steps>
+
+## Gradient Ascent Implementation
+
+### Training Procedure
+
+The model uses gradient ascent to maximize the log-likelihood:
+
+```python
+def Gradient_Ascent(X, y, learning_rate, num_iters, lambda_reg=0):
+    w = np.zeros((X.shape[1], 1))
+    
+    for i in range(num_iters):
+        hyp = hypothesis(X, w)
+        gradient = np.dot(X.T, (y - hyp)) / N
+        
+        # Add L2 regularization gradient
+        if lambda_reg > 0:
+            w_without_bias = w.copy()
+            w_without_bias[0] = 0
+            gradient -= lambda_reg * w_without_bias
+        
+        w = w + learning_rate * gradient
+    
+    return w
+```
+
+### Hyperparameters
+
+<AccordionGroup>
+  <Accordion title="Learning Rate">
+    **Value:** 0.01
+    
+    Controls the step size during gradient ascent optimization.
+  </Accordion>
+  
+  <Accordion title="Number of Iterations">
+    **Value:** 10,000
+    
+    Number of gradient ascent steps performed during training.
+  </Accordion>
+  
+  <Accordion title="L2 Regularization (λ)">
+    **Tested Values:** 0, 0.001, 0.01, 0.1, 1, 10
+    
+    **Best Value:** 0.01
+    
+    Prevents overfitting by penalizing large weights (bias term excluded).
+  </Accordion>
+</AccordionGroup>
+
+## L2 Regularization
+
+### Purpose
+
+L2 regularization (Ridge regression) adds a penalty term to the log-likelihood:
+
+- **Prevents overfitting** by constraining weight magnitudes
+- **Improves generalization** to unseen data
+- **Does NOT penalize** the bias term (intercept)
+
+### Effect on Model
+
+The regularization term modifies the gradient:
+
+```python
+gradient -= lambda_reg * w_without_bias
+```
+
+This shrinks weights toward zero, creating smoother decision boundaries.
+
+## Feature Transformation Results
+
+### Performance by Feature Set
+
+| Feature Transform | Accuracy | Precision | Recall | F1 Score | AUC |
+|-------------------|----------|-----------|--------|----------|-----|
+| **Baseline** | **0.8917** | **0.8493** | **0.9688** | **0.9051** | **0.9754** |
+| PCA (95%) | 0.8833 | 0.8378 | 0.9688 | 0.8986 | 0.9782 |
+| Polynomial 3 | 0.8750 | 0.8267 | 0.9688 | 0.8921 | 0.9732 |
+| Polynomial 2 | 0.5333 | 0.5333 | 1.0000 | 0.6957 | 0.5000 |
+
+<Note>
+The **baseline (scaled) features** with **λ = 0.01** achieved the best overall performance across all metrics.
+</Note>
+
+## Best Model Configuration
+
+<CardGroup cols={2}>
+  <Card title="Feature Transform" icon="sliders">
+    Baseline (scaled features)
+  </Card>
+  <Card title="Regularization" icon="shield">
+    λ = 0.01 (L2 penalty)
+  </Card>
+  <Card title="Test Accuracy" icon="bullseye">
+    89.17%
+  </Card>
+  <Card title="Test AUC" icon="chart-area">
+    0.9754
+  </Card>
+</CardGroup>
+
+## Predictions
+
+### Classification Function
+
+```python
+def predict_class(X, w, threshold=0.5):
+    y_prob = hypothesis(X, w)
+    y_pred = (y_prob >= threshold).astype(int)
+    return y_pred
+```
+
+### Probability Outputs
+
+The model outputs probabilities that a team qualifies for the playoffs:
+
+- **> 0.5:** Predicted playoff team
+- **≤ 0.5:** Predicted non-playoff team
+
+## Model Strengths
+
+<AccordionGroup>
+  <Accordion title="Interpretability">
+    Learned weights directly show feature importance and direction of influence.
+  </Accordion>
+  
+  <Accordion title="Fast Training">
+    Gradient ascent converges quickly on this dataset (10,000 iterations).
+  </Accordion>
+  
+  <Accordion title="Robust Performance">
+    Achieved 89.17% accuracy with strong generalization.
+  </Accordion>
+  
+  <Accordion title="Regularization Control">
+    L2 penalty prevents overfitting while maintaining high performance.
+  </Accordion>
+</AccordionGroup>
+
+## Model Limitations
+
+<Warning>
+- **Linear decision boundary** may not capture complex non-linear patterns
+- **Feature scaling required** for optimal performance
+- **Assumes feature independence** which may not hold in all cases
+</Warning>
+
+## Code Example
+
+### Training the Model
+
+```python
+# Hyperparameters
+learning_rate = 0.01
+num_iters = 10000
+lambda_reg = 0.01  # L2 regularization
+
+# Augment features with bias term
+X_train_aug = augment_X(X_train)
+X_val_aug = augment_X(X_val)
+X_test_aug = augment_X(X_test)
+
+# Train model
+w, log_likelihood_values = Gradient_Ascent(
+    X_train_aug, y_train, 
+    learning_rate, num_iters, 
+    lambda_reg=lambda_reg
+)
+
+# Make predictions
+y_test_pred = predict_class(X_test_aug, w, threshold=0.5)
+```
+
+## Performance Visualization
+
+The model's log-likelihood increases smoothly during training, indicating proper convergence:
+
+<img src="/images/logistic_regression_convergence.png" alt="Log-likelihood convergence" />
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="KNN Model" icon="diagram-project" href="/models/knn">
+    Compare with K-Nearest Neighbors
+  </Card>
+  <Card title="Neural Network" icon="brain" href="/models/neural-network">
+    Explore deep learning approach
+  </Card>
+  <Card title="Model Comparison" icon="scale-balanced" href="/models/comparison">
+    See comprehensive comparison
+  </Card>
+  <Card title="Feature Engineering" icon="wand-magic-sparkles" href="/data/features">
+    Learn about feature transformations
+  </Card>
+</CardGroup>

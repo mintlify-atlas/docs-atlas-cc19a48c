@@ -1,0 +1,185 @@
+---
+title: Dependencies
+description: Python packages and libraries used in the NBAPredict project
+---
+
+The NBAPredict project relies on several Python packages for data processing, machine learning, and visualization. All dependencies are listed in `requirements.txt` and can be installed using pip.
+
+## Installation
+
+Install all required dependencies with:
+
+```bash
+pip install -r requirements.txt
+```
+
+For development in a virtual environment:
+
+```bash
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+pip install -r requirements.txt
+```
+
+## Core Dependencies
+
+### Data Processing
+
+<ParamField path="pandas" type="package">
+  **Purpose:** Data manipulation and analysis
+  
+  Used for:
+  - Loading and processing NBA statistics datasets
+  - Data cleaning and transformation
+  - Time series analysis of team performance
+  - Aggregating player and team statistics
+  
+  **Version:** Latest stable version (no pinned version)
+</ParamField>
+
+<ParamField path="numpy" type="package">
+  **Purpose:** Numerical computing and array operations
+  
+  Used for:
+  - Mathematical operations on large datasets
+  - Array manipulations for feature engineering
+  - Statistical calculations
+  - Supporting backend for pandas and scikit-learn
+  
+  **Version:** Latest stable version (no pinned version)
+</ParamField>
+
+### Data Acquisition
+
+<ParamField path="kaggle" type="package">
+  **Purpose:** Kaggle API client for dataset downloads
+  
+  Used for:
+  - Downloading NBA datasets from Kaggle
+  - Authenticating with Kaggle using API credentials
+  - Programmatic access to competition data
+  
+  **Version:** Latest stable version (no pinned version)
+  
+  <Note>
+  Requires `KAGGLE_USERNAME` and `KAGGLE_KEY` environment variables to be set. See [Environment Variables](/reference/environment) for setup instructions.
+  </Note>
+</ParamField>
+
+<ParamField path="python-dotenv" type="package">
+  **Purpose:** Environment variable management
+  
+  Used for:
+  - Loading environment variables from `.env` file
+  - Securely managing API credentials
+  - Configuration management
+  
+  **Version:** Latest stable version (no pinned version)
+</ParamField>
+
+### Machine Learning
+
+<ParamField path="tensorflow" type="package">
+  **Purpose:** Deep learning framework
+  
+  Used for:
+  - Building neural network models for playoff predictions
+  - Training deep learning models on historical NBA data
+  - Model optimization and evaluation
+  - GPU-accelerated computation (if available)
+  
+  **Version:** Latest stable version (no pinned version)
+  
+  <Warning>
+  TensorFlow can be resource-intensive. Ensure your system meets the minimum requirements, especially if using CPU-only mode.
+  </Warning>
+</ParamField>
+
+<ParamField path="scikit-learn" type="package">
+  **Purpose:** Traditional machine learning algorithms and utilities
+  
+  Used for:
+  - Feature preprocessing and scaling
+  - Model evaluation metrics (accuracy, precision, recall)
+  - Train-test splitting
+  - Cross-validation
+  - Comparison models (Random Forest, Logistic Regression, etc.)
+  
+  **Version:** Latest stable version (no pinned version)
+</ParamField>
+
+### Visualization
+
+<ParamField path="matplotlib" type="package">
+  **Purpose:** Core plotting library
+  
+  Used for:
+  - Creating charts and graphs of model performance
+  - Visualizing training progress
+  - Plotting team statistics and trends
+  - Generating publication-quality figures
+  
+  **Version:** Latest stable version (no pinned version)
+</ParamField>
+
+<ParamField path="seaborn" type="package">
+  **Purpose:** Statistical data visualization
+  
+  Used for:
+  - Advanced statistical plots
+  - Correlation matrices and heatmaps
+  - Distribution plots for feature analysis
+  - Enhanced aesthetics for matplotlib plots
+  
+  **Version:** Latest stable version (no pinned version)
+</ParamField>
+
+## Version Management
+
+The `requirements.txt` file currently uses unpinned versions, which means `pip install` will fetch the latest compatible versions. For production deployments, consider:
+
+1. **Pinning versions** for reproducibility:
+   ```bash
+   pip freeze > requirements.txt
+   ```
+
+2. **Using version constraints** for security updates:
+   ```txt
+   pandas>=2.0.0,<3.0.0
+   tensorflow>=2.12.0,<3.0.0
+   ```
+
+## Compatibility Notes
+
+<AccordionGroup>
+  <Accordion title="Python Version">
+    This project requires Python 3.8 or higher. TensorFlow 2.x has the best support for Python 3.8-3.11.
+  </Accordion>
+  
+  <Accordion title="TensorFlow GPU Support">
+    To use GPU acceleration:
+    - Install CUDA and cuDNN compatible with your TensorFlow version
+    - Install tensorflow-gpu instead of tensorflow (or use tensorflow 2.x which includes GPU support)
+    - Verify GPU availability with `tf.config.list_physical_devices('GPU')`
+  </Accordion>
+  
+  <Accordion title="Platform-Specific Issues">
+    - **macOS M1/M2:** Use tensorflow-macos and tensorflow-metal for Apple Silicon optimization
+    - **Windows:** Some packages may require Microsoft C++ Build Tools
+    - **Linux:** Generally has the best compatibility with all packages
+  </Accordion>
+</AccordionGroup>
+
+## Updating Dependencies
+
+To update all packages to their latest versions:
+
+```bash
+pip install --upgrade -r requirements.txt
+```
+
+To update a specific package:
+
+```bash
+pip install --upgrade pandas
+```

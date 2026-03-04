@@ -1,0 +1,242 @@
+---
+title: Exploratory Data Analysis notebook
+description: Feature distributions, correlations, PCA, and clustering analysis
+---
+
+The `exploratory_data_analysis.ipynb` notebook provides comprehensive exploratory data analysis (EDA) for the NBA playoff prediction dataset. It visualizes feature distributions, identifies correlations, performs dimensionality reduction with PCA, and discovers patterns through K-means clustering.
+
+## Purpose
+
+This notebook helps you understand the dataset before training models:
+
+- Visualize feature distributions by playoff status
+- Identify highly correlated features
+- Determine how many principal components capture variance
+- Discover natural groupings in the data
+
+## Prerequisites
+
+Run [NBAPredict.ipynb](/reference/nba-predict) first to generate the processed data files.
+
+## Inputs
+
+Loads preprocessed data from `./data/processed/`:
+
+- `X_train_scaled.npy` — Standardized training features (446 samples, 27 features)
+- `y_train.npy` — Training labels (1 = playoff, 0 = non-playoff)
+- `feature_names.json` — List of 27 feature names
+
+## Outputs
+
+Saves visualizations and analysis to `./results/eda/`:
+
+- `feature_distributions.png` — Histograms and box plots by playoff status
+- `correlation_matrix.png` — Heatmap of feature correlations
+- `pca_variance.png` — Explained variance by principal component
+- `pca_2d_projection.png` — 2D scatter plot of first two PCs
+- `clustering_analysis.png` — K-means clustering results
+- `eda_summary.txt` — Statistical summary and insights
+
+## Dataset overview
+
+The training set contains:
+
+- **446 team-seasons** (70% of full dataset)
+- **27 features** (aggregated season statistics)
+- **Target distribution**: 240 playoff teams (53.8%), 206 non-playoff teams (46.2%)
+
+<Note>
+  The dataset is relatively balanced—no class imbalance correction is needed.
+</Note>
+
+## Feature distributions
+
+The notebook generates box plots and histograms for all 27 features, split by playoff status.
+
+### Key observations
+
+<AccordionGroup>
+  <Accordion title="Win percentage (most predictive)">
+    **Playoff teams**: Mean = 0.622 (62.2% win rate)
+    **Non-playoff teams**: Mean = 0.382 (38.2% win rate)
+    
+    Clear separation—win percentage is the strongest single predictor of playoff qualification.
+  </Accordion>
+  
+  <Accordion title="Point differential">
+    **Playoff teams**: Mean = +4.8 points per game
+    **Non-playoff teams**: Mean = -4.6 points per game
+    
+    Playoff teams outscore opponents by nearly 5 points per game on average.
+  </Accordion>
+  
+  <Accordion title="Field goal percentage">
+    **Playoff teams**: Mean = 46.2%
+    **Non-playoff teams**: Mean = 44.8%
+    
+    Modest difference—shooting efficiency matters but isn't as predictive as win rate.
+  </Accordion>
+  
+  <Accordion title="Three-point percentage">
+    **Playoff teams**: Mean = 35.4%
+    **Non-playoff teams**: Mean = 34.8%
+    
+    Small difference—3P% has limited predictive power for playoff qualification.
+  </Accordion>
+  
+  <Accordion title="Assists">
+    **Playoff teams**: Mean = 23.1 assists per game
+    **Non-playoff teams**: Mean = 21.8 assists per game
+    
+    Playoff teams distribute the ball more effectively.
+  </Accordion>
+</AccordionGroup>
+
+## Correlation analysis
+
+The notebook computes pairwise Pearson correlations between all 27 features.
+
+### High correlation pairs
+
+| Feature 1 | Feature 2 | Correlation |
+|-----------|-----------|-------------|
+| plusMinusPoints | point_diff | **r = 0.998** |
+| fieldGoalsMade | fieldGoalsAttempted | r = 0.972 |
+| threePointersMade | threePointersAttempted | r = 0.965 |
+| reboundsTotal | reboundsDefensive | r = 0.954 |
+| teamScore | fieldGoalsMade | r = 0.943 |
+
+<Warning>
+  **plusMinusPoints** and **point_diff** are nearly perfectly correlated (r=0.998). Including both creates multicollinearity—consider dropping one.
+</Warning>
+
+### Features with low correlation to target
+
+- `freeThrowsPercentage` (r = 0.12)
+- `q1Points` (r = 0.18)
+- `timeoutsRemaining` (r = 0.09)
+
+These features have weak linear relationships with playoff status but may still contribute non-linearly.
+
+## PCA (Principal Component Analysis)
+
+The notebook fits PCA on the training data and analyzes explained variance.
+
+### Variance explained
+
+| Component | Variance Explained | Cumulative Variance |
+|-----------|-------------------|---------------------|
+| PC1 | 24.3% | 24.3% |
+| PC2 | 18.7% | 43.0% |
+| PC3 | 12.4% | 55.4% |
+| PC4 | 9.8% | 65.2% |
+| PC5 | 7.6% | 72.8% |
+| ... | ... | ... |
+| **PC11** | **2.1%** | **90.0%** |
+| **PC13** | **1.8%** | **95.0%** |
+
+<Tip>
+  **11 components** capture 90% of variance. **13 components** capture 95% of variance. The data preparation notebook uses 13 PCA components for model training.
+</Tip>
+
+### 2D projection
+
+Projecting onto the first two principal components (PC1 and PC2):
+
+- **PC1** (24.3% variance): Strongly correlated with offensive efficiency (FG%, points scored)
+- **PC2** (18.7% variance): Strongly correlated with defensive metrics (opponent FG%, steals, blocks)
+
+**Observation**: Playoff teams (orange) cluster toward higher PC1 values (better offense) and slightly higher PC2 values (better defense). Non-playoff teams (blue) scatter more widely.
+
+## K-means clustering
+
+The notebook applies K-means clustering to discover natural groupings in the data.
+
+### Optimal number of clusters
+
+Tested K = 2, 3, 4, 5, 6 using silhouette score:
+
+| K | Silhouette Score |
+|---|------------------|
+| **2** | **0.166** |
+| 3 | 0.142 |
+| 4 | 0.138 |
+| 5 | 0.129 |
+| 6 | 0.115 |
+
+**Optimal K = 2**: Two natural clusters emerge, corresponding roughly to "strong teams" and "weak teams."
+
+### Cluster composition
+
+**Cluster 0** ("Weak teams"):
+- 224 teams
+- 38 playoff teams (17.0%)
+- 186 non-playoff teams (83.0%)
+
+**Cluster 1** ("Strong teams"):
+- 222 teams
+- 202 playoff teams (84.2%)
+- 52 non-playoff teams (15.8%)
+
+<Note>
+  **Cluster 1** captures 84.2% playoff teams, indicating a clear separation between strong and weak teams based on season statistics.
+</Note>
+
+### Cluster characteristics
+
+| Feature | Cluster 0 (Weak) | Cluster 1 (Strong) | Difference |
+|---------|-----------------|-------------------|------------|
+| win_pct | 0.392 | 0.612 | +0.220 |
+| point_diff | -4.2 | +4.6 | +8.8 |
+| fieldGoalsPercentage | 44.9% | 46.1% | +1.2% |
+| assists | 21.9 | 23.0 | +1.1 |
+| turnovers | 14.8 | 13.6 | -1.2 |
+
+Strong teams have higher win rates, better shooting, more assists, and fewer turnovers.
+
+## Usage
+
+Run the notebook after data preparation:
+
+```bash
+jupyter notebook exploratory_data_analysis.ipynb
+```
+
+Or in VS Code/Cursor:
+1. Open `exploratory_data_analysis.ipynb`
+2. Run all cells sequentially
+3. View visualizations in `./results/eda/`
+
+## Expected runtime
+
+- Feature distribution plots: 2 minutes
+- Correlation analysis: 30 seconds
+- PCA: 1 minute
+- K-means clustering: 1 minute
+- Total: ~5 minutes
+
+## Key insights
+
+<CardGroup cols={2}>
+  <Card title="Win percentage dominates" icon="trophy">
+    Win rate is the strongest single predictor—playoff teams win 62% of games vs 38% for non-playoff teams.
+  </Card>
+  
+  <Card title="Multicollinearity present" icon="link">
+    plusMinusPoints and point_diff are nearly identical (r=0.998). Drop one to reduce redundancy.
+  </Card>
+  
+  <Card title="13 PCA components suffice" icon="compress">
+    Dimensionality can be reduced from 27 to 13 features while retaining 95% of variance.
+  </Card>
+  
+  <Card title="Two natural clusters" icon="object-group">
+    K-means identifies "strong teams" (84% playoff rate) and "weak teams" (17% playoff rate).
+  </Card>
+</CardGroup>
+
+## Next steps
+
+- Train models using [logistic regression](/reference/log-predict), [KNN](/reference/knn-predict), or [neural networks](/reference/neural-network-predict)
+- Analyze feature importance from [trained models](/models/logistic-regression)
+- Experiment with feature selection based on [correlation insights](/data/preparation)

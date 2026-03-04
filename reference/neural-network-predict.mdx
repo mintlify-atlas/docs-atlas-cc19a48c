@@ -1,0 +1,308 @@
+---
+title: NeuralNetworkPredict notebook
+description: Deep learning models with TensorFlow/Keras for playoff prediction
+---
+
+The `NeuralNetworkPredict.ipynb` notebook trains neural networks using TensorFlow/Keras. It explores multiple architectures, regularization techniques, and feature transformations to achieve the highest AUC among all three model families.
+
+## Purpose
+
+This notebook demonstrates deep learning for NBA playoff prediction:
+
+- Tests 2-layer, 3-layer, and 5-layer architectures
+- Applies L2 regularization to prevent overfitting
+- Uses early stopping to halt training when validation performance plateaus
+- Compares performance across feature transformations
+
+## Prerequisites
+
+Run [NBAPredict.ipynb](/reference/nba-predict) first to generate processed data files.
+
+## Inputs
+
+Loads preprocessed data from `./data/processed/`:
+
+- `X_train_scaled.npy`, `X_val_scaled.npy`, `X_test_scaled.npy`
+- `X_train_poly2.npy`, `X_val_poly2.npy`, `X_test_poly2.npy`
+- `X_train_poly3.npy`, `X_val_poly3.npy`, `X_test_poly3.npy`
+- `X_train_pca.npy`, `X_val_pca.npy`, `X_test_pca.npy`
+- `y_train.npy`, `y_val.npy`, `y_test.npy`
+
+## Outputs
+
+Saves models and results to `./results/neural_network/`:
+
+- `best_model.h5` — Best neural network weights
+- `best_model_config.json` — Architecture and hyperparameters
+- `all_results.csv` — Performance metrics for all 96 configurations
+- `training_history.png` — Loss and accuracy curves
+- `roc_curve.png` — ROC curve visualization
+
+## Architecture exploration
+
+The notebook tests 4 architectures with varying depth and width:
+
+### 2-layer network (128, 64)
+
+```python
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense, Dropout
+from tensorflow.keras.regularizers import l2
+
+model = Sequential([
+    Dense(128, activation='relu', input_dim=27, kernel_regularizer=l2(0.01)),
+    Dropout(0.3),
+    Dense(64, activation='relu', kernel_regularizer=l2(0.01)),
+    Dropout(0.3),
+    Dense(1, activation='sigmoid')
+])
+
+model.compile(
+    optimizer='adam',
+    loss='binary_crossentropy',
+    metrics=['accuracy']
+)
+```
+
+**Best performer**: Achieves 98.24% AUC with baseline features and L2 λ=0.01.
+
+### 3-layer network (128, 64, 32)
+
+```python
+model = Sequential([
+    Dense(128, activation='relu', input_dim=27, kernel_regularizer=l2(0.01)),
+    Dropout(0.3),
+    Dense(64, activation='relu', kernel_regularizer=l2(0.01)),
+    Dropout(0.3),
+    Dense(32, activation='relu', kernel_regularizer=l2(0.01)),
+    Dropout(0.3),
+    Dense(1, activation='sigmoid')
+])
+```
+
+Adds a third hidden layer. Performs slightly worse than 2-layer (97.92% AUC)—deeper is not always better on small datasets.
+
+### 5-layer network (256, 128, 64, 32, 16)
+
+```python
+model = Sequential([
+    Dense(256, activation='relu', input_dim=27),
+    Dropout(0.4),
+    Dense(128, activation='relu'),
+    Dropout(0.4),
+    Dense(64, activation='relu'),
+    Dropout(0.3),
+    Dense(32, activation='relu'),
+    Dropout(0.3),
+    Dense(16, activation='relu'),
+    Dropout(0.2),
+    Dense(1, activation='sigmoid')
+])
+```
+
+Deep network with aggressive dropout. Tends to overfit despite regularization (96.88% AUC).
+
+### Wide 2-layer network (256, 128)
+
+```python
+model = Sequential([
+    Dense(256, activation='relu', input_dim=27, kernel_regularizer=l2(0.01)),
+    Dropout(0.3),
+    Dense(128, activation='relu', kernel_regularizer=l2(0.01)),
+    Dropout(0.3),
+    Dense(1, activation='sigmoid')
+])
+```
+
+Wider first layer. Performs comparably to 2-layer (128, 64) but with more parameters (97.89% AUC).
+
+## Regularization techniques
+
+### L2 weight penalty
+
+The notebook tests 6 λ values: 0, 0.001, 0.01, 0.1, 1, 10
+
+```python
+Dense(128, activation='relu', kernel_regularizer=l2(0.01))
+```
+
+Adds penalty term to loss function:
+
+Loss = Binary Cross-Entropy + λ × Σ(w²)
+
+**Results by λ** (2-layer architecture, baseline features):
+
+| λ | Test AUC | Notes |
+|---|----------|-------|
+| 0 | 97.12% | No regularization—slight overfitting |
+| 0.001 | 97.68% | Minimal regularization |
+| **0.01** | **98.24%** | **Optimal balance** |
+| 0.1 | 96.54% | Moderate underfitting |
+| 1 | 94.32% | Heavy underfitting |
+| 10 | 91.88% | Severe underfitting |
+
+<Tip>
+  λ=0.01 provides the best bias-variance tradeoff. Higher values constrain weights too much; lower values allow overfitting.
+</Tip>
+
+### Dropout layers
+
+Randomly drops 30–40% of neurons during training to prevent co-adaptation:
+
+```python
+Dropout(0.3)  # Drop 30% of neurons
+```
+
+Forces the network to learn robust representations that don't rely on specific neurons.
+
+### Early stopping
+
+```python
+from tensorflow.keras.callbacks import EarlyStopping
+
+early_stop = EarlyStopping(
+    monitor='val_loss',
+    patience=20,
+    restore_best_weights=True
+)
+
+model.fit(
+    X_train, y_train,
+    validation_data=(X_val, y_val),
+    epochs=200,
+    batch_size=32,
+    callbacks=[early_stop],
+    verbose=0
+)
+```
+
+Stops training if validation loss doesn't improve for 20 consecutive epochs. Prevents overfitting and reduces training time.
+
+## Best model results
+
+The optimal configuration:
+
+- **Architecture**: 2-layer (128, 64)
+- **Activation**: ReLU
+- **L2 regularization**: λ=0.01
+- **Dropout**: 0.3
+- **Feature transformation**: Baseline scaled
+
+### Test set performance
+
+| Metric | Value |
+|--------|-------|
+| Accuracy | 87.50% |
+| Precision | 89.36% |
+| Recall | 98.44% |
+| F1 Score | 93.62% |
+| AUC | **98.24%** |
+
+<Note>
+  Neural networks achieve the highest AUC (98.24%) and second-best F1 score (93.62%). They excel at learning non-linear decision boundaries without explicit feature engineering.
+</Note>
+
+## Feature transformation impact
+
+Neural network performance by feature type (2-layer, λ=0.01):
+
+| Transformation | Test AUC |
+|----------------|----------|
+| **Baseline scaled** | **98.24%** |
+| Polynomial degree 2 | 96.78% |
+| Polynomial degree 3 | 95.42% |
+| PCA | 97.15% |
+
+**Key insight**: Neural networks perform best with baseline features. They learn feature interactions internally through hidden layers—explicit polynomial features are redundant and add noise.
+
+## Training configuration
+
+```python
+model.compile(
+    optimizer='adam',          # Adaptive learning rate
+    loss='binary_crossentropy', # Log loss for classification
+    metrics=['accuracy']
+)
+
+history = model.fit(
+    X_train, y_train,
+    validation_data=(X_val, y_val),
+    epochs=200,
+    batch_size=32,
+    callbacks=[early_stop],
+    class_weight={0: 1.0, 1: 1.1},  # Slightly upweight playoff class
+    verbose=1
+)
+```
+
+<AccordionGroup>
+  <Accordion title="Adam optimizer">
+    Adaptive Moment Estimation (Adam) adjusts learning rate per parameter:
+    - Fast convergence
+    - Works well with default settings (lr=0.001, β₁=0.9, β₂=0.999)
+    - More stable than SGD for small datasets
+  </Accordion>
+  
+  <Accordion title="Binary cross-entropy loss">
+    Standard loss function for binary classification:
+    
+    Loss = -[y log(ŷ) + (1-y) log(1-ŷ)]
+    
+    Penalizes confident wrong predictions more than uncertain predictions.
+  </Accordion>
+  
+  <Accordion title="Class weighting">
+    ```python
+    class_weight={0: 1.0, 1: 1.1}
+    ```
+    
+    Upweights playoff class (1) by 10% to slightly favor recall over precision. Addresses minor class imbalance (53.8% playoff teams).
+  </Accordion>
+</AccordionGroup>
+
+## Usage
+
+Run the notebook after data preparation:
+
+```bash
+jupyter notebook NeuralNetworkPredict.ipynb
+```
+
+Or in VS Code/Cursor:
+1. Open `NeuralNetworkPredict.ipynb`
+2. Run all cells sequentially
+3. View results in `./results/neural_network/`
+
+<Warning>
+  Training 96 configurations (4 architectures × 6 λ values × 4 transformations) can take 30–60 minutes depending on hardware. GPU acceleration significantly reduces training time.
+</Warning>
+
+## Expected runtime
+
+- Training all 96 configurations: 30–60 minutes (CPU), 10–15 minutes (GPU)
+- Evaluation and visualization: 2 minutes
+- Total: ~35–60 minutes
+
+## Strengths and weaknesses
+
+<CardGroup cols={2}>
+  <Card title="Strengths" icon="circle-check">
+    - Highest AUC (98.24%)
+    - Learns non-linear patterns automatically
+    - No need for explicit feature engineering
+    - Scalable to larger datasets
+  </Card>
+  
+  <Card title="Weaknesses" icon="circle-xmark">
+    - Longer training time
+    - Less interpretable than logistic regression
+    - Requires careful hyperparameter tuning
+    - Risk of overfitting on small datasets
+  </Card>
+</CardGroup>
+
+## Next steps
+
+- Compare with [logistic regression](/reference/log-predict) and [KNN](/reference/knn-predict)
+- Run [ModelComparison.ipynb](/reference/model-comparison) for comprehensive evaluation
+- Experiment with different architectures (residual connections, batch normalization)
