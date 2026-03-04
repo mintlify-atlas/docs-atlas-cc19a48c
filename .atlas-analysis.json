@@ -1,0 +1,91 @@
+{
+  "projectType": "ai-ml",
+  "projectName": "NBAPredict",
+  "projectDescription": "Machine learning system that predicts NBA playoff teams using logistic regression, KNN, and neural networks on season statistics.",
+  "theme": "aspen",
+  "primaryColor": "#1D428A",
+  "lightColor": "#C8102E",
+  "darkColor": "#1D428A",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "quickstart"
+            ]
+          },
+          {
+            "group": "Data & Features",
+            "pages": [
+              "data/overview",
+              "data/preparation",
+              "data/exploratory-analysis"
+            ]
+          },
+          {
+            "group": "Models",
+            "pages": [
+              "models/overview",
+              "models/logistic-regression",
+              "models/knn",
+              "models/neural-network",
+              "models/comparison"
+            ]
+          },
+          {
+            "group": "Guides",
+            "pages": [
+              "guides/setup",
+              "guides/kaggle-api",
+              "guides/running-notebooks",
+              "guides/training"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Reference",
+        "groups": [
+          {
+            "group": "Notebooks",
+            "pages": [
+              "reference/nba-predict",
+              "reference/log-predict",
+              "reference/knn-predict",
+              "reference/neural-network-predict",
+              "reference/model-comparison",
+              "reference/exploratory-data-analysis"
+            ]
+          },
+          {
+            "group": "Configuration",
+            "pages": [
+              "reference/environment",
+              "reference/dependencies"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Data pipeline for NBA game logs and team statistics aggregation",
+    "Custom logistic regression with gradient ascent and L2 regularization",
+    "KNN classifier with hyperparameter grid search",
+    "Neural network models with TensorFlow/Keras",
+    "Comprehensive model comparison across accuracy, precision, recall, F1, and AUC",
+    "Exploratory data analysis with PCA and clustering"
+  ],
+  "publicApiSurface": [
+    "NBAPredict.ipynb - Data preparation and feature engineering",
+    "LogPredict.ipynb - Logistic regression training",
+    "KNNPredict.ipynb - K-nearest neighbors training",
+    "NeuralNetworkPredict.ipynb - Neural network training",
+    "ModelComparison.ipynb - Model evaluation and comparison",
+    "exploratory_data_analysis.ipynb - EDA and visualization"
+  ]
+}
